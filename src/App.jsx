@@ -326,6 +326,49 @@ const styles = `
   /* PAYMENT SUCCESS */
   .payment-success { text-align: center; padding: 20px 0; }
   .success-icon { width: 64px; height: 64px; background: #e8f5f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--primary); }
+
+.product-card-pos.in-cart {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.mobile-cart-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-cart-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 998;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--sidebar);
+    color: #fff;
+    padding: 12px 14px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  }
+
+  .mobile-cart-bar strong {
+    font-size: 14px;
+  }
+
+  .mobile-cart-bar div div {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    margin-top: 2px;
+  }
+
+  .content {
+    padding-bottom: 90px;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -774,19 +817,39 @@ function Cashier({ products, onTransaction, settings }) {
   const activeProducts = products.filter(p => p.active);
   const categories = ["Semua", ...Array.from(new Set(activeProducts.map(p => p.category)))];
 
+const getCartQty = (productId) => {
+  const found = cart.find(c => c.id === productId);
+  return found ? Number(found.qty || 0) : 0;
+};
+
+const cartCount = cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+
   const filtered = activeProducts.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchCat = catFilter === "Semua" || p.category === catFilter;
     return matchSearch && matchCat;
   });
 
-  const addToCart = (p) => {
-    setCart(prev => {
-      const existing = prev.find(c => c.id === p.id);
-      if (existing) return prev.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c);
-      return [...prev, { ...p, qty: 1 }];
-    });
-  };
+const addToCart = (p) => {
+  setCart(prev => {
+    const existing = prev.find(c => c.id === p.id);
+    const currentQty = existing ? Number(existing.qty || 0) : 0;
+    const stock = Number(p.stock || 0);
+
+    if (currentQty >= stock) {
+      alert("Stok " + p.name + " tidak cukup.");
+      return prev;
+    }
+
+    if (existing) {
+      return prev.map(c =>
+        c.id === p.id ? { ...c, qty: c.qty + 1 } : c
+      );
+    }
+
+    return [...prev, { ...p, qty: 1 }];
+  });
+};  
 
   const updateQty = (id, delta) => {
     setCart(prev => {
@@ -907,21 +970,51 @@ function Cashier({ products, onTransaction, settings }) {
           </select>
         </div>
         <div className="product-grid">
-          {filtered.map(p => (
-            <div key={p.id} className={`product-card-pos ${p.stock === 0 ? "out-of-stock" : ""}`} onClick={() => addToCart(p)}>
-              <div className="emoji">{p.image}</div>
-              <div className="pname">{p.name}</div>
-              <div className="pprice">{fmt(p.discount ? Math.round(p.price * (1 - p.discount / 100)) : p.price)}</div>
-              {p.discount > 0 && <span className="badge badge-orange" style={{ fontSize: 10 }}>Diskon {p.discount}%</span>}
-              <div className="pstock">Stok: {p.stock}</div>
-            </div>
-          ))}
+         {filtered.map(p => {
+  const inCart = getCartQty(p.id);
+  const availableStock = Math.max(0, Number(p.stock || 0) - inCart);
+
+  return (
+    <div
+      key={p.id}
+      className={
+  "product-card-pos" +
+  (availableStock === 0 ? " out-of-stock" : "") +
+  (inCart > 0 ? " in-cart" : "")
+}
+      onClick={() => availableStock > 0 && addToCart(p)}
+    >
+      <div className="emoji">{p.image}</div>
+      <div className="pname">{p.name}</div>
+      <div className="pprice">
+        {fmt(p.discount ? Math.round(p.price * (1 - p.discount / 100)) : p.price)}
+      </div>
+
+      {p.discount > 0 && (
+        <span className="badge badge-orange" style={{ fontSize: 10 }}>
+          Diskon {p.discount}%
+        </span>
+      )}
+
+      {inCart > 0 && (
+        <span className="badge badge-green" style={{ fontSize: 10 }}>
+          Di keranjang: {inCart}
+        </span>
+      )}
+
+      <div className="pstock">
+        Sisa: {availableStock} {p.unit}
+      </div>
+    </div>
+  );
+})} 
+
           {filtered.length === 0 && <div className="empty"><div className="empty-icon">🔍</div>Produk tidak ditemukan</div>}
         </div>
       </div>
 
       {/* CART */}
-      <div className="cart-panel">
+      <div id="cart-panel" className="cart-panel">
         <div className="cart-header">
           <div style={{ fontFamily: "Sora", fontWeight: 700, fontSize: 15 }}>🛒 Keranjang</div>
           {cart.length > 0 && (
@@ -968,6 +1061,21 @@ function Cashier({ products, onTransaction, settings }) {
           </button>
         </div>
       </div>
+
+{cart.length > 0 && (
+  <div className="mobile-cart-bar">
+    <div>
+      <strong>{cartCount} item</strong>
+      <div>{fmt(total)}</div>
+    </div>
+    <button
+      className="btn btn-primary btn-sm"
+      onClick={() => document.getElementById("cart-panel")?.scrollIntoView({ behavior: "smooth" })}
+    >
+      Lihat Keranjang
+    </button>
+  </div>
+)}
 
       {showPayModal && (
         <div className="modal-overlay">
