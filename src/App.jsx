@@ -353,6 +353,167 @@ const styles = `
     margin: 0;
   }
 }
+/* RESPONSIVE MOBILE */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sidebar-brand {
+    padding: 16px;
+    text-align: center;
+  }
+
+  .sidebar-brand .brand-badge {
+    margin: 0 auto 10px;
+  }
+
+  .sidebar-brand .store-name {
+    font-size: 16px;
+  }
+
+  .sidebar-section {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .sidebar-label {
+    display: none;
+  }
+
+  .nav-item {
+    min-width: max-content;
+    margin-bottom: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .nav-item span {
+    white-space: nowrap;
+  }
+
+  .nav-badge {
+    margin-left: 6px;
+  }
+
+  .main {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .topbar {
+    height: auto;
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .topbar-title {
+    font-size: 18px;
+  }
+
+  .topbar-right {
+    gap: 8px;
+  }
+
+  .content {
+    padding: 16px;
+    overflow: visible;
+  }
+
+  .stats-grid,
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .cashier-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: 16px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .product-card-pos {
+    min-height: 130px;
+  }
+
+  .cart-panel {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .cart-items {
+    max-height: 300px;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar .input-group,
+  .search-bar .input,
+  .search-bar button {
+    width: 100% !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .submenu-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .submenu-tab {
+    min-width: max-content;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 720px;
+  }
+
+  .modal {
+    width: calc(100vw - 24px);
+    padding: 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 `;
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
