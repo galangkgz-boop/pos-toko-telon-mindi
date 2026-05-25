@@ -332,12 +332,34 @@ const styles = `
   background: var(--primary-soft);
 }
 
-.mobile-cart-bar {
+.mobile-product-actions {
+  display: none;
+}
+
+.mobile-checkout-bar {
   display: none;
 }
 
 @media (max-width: 768px) {
-  .mobile-cart-bar {
+  .cart-panel {
+    display: none;
+  }
+
+  .mobile-product-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .mobile-product-actions .btn-sm {
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .mobile-checkout-bar {
     position: fixed;
     left: 12px;
     right: 12px;
@@ -347,25 +369,38 @@ const styles = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: var(--sidebar);
+    background: #fff;
+    color: var(--text);
+    padding: 14px 16px;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+  }
+
+  .mobile-checkout-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .mobile-checkout-bar strong {
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  .mobile-buy-btn {
+    border: none;
+    background: var(--primary);
     color: #fff;
-    padding: 12px 14px;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  }
-
-  .mobile-cart-bar strong {
-    font-size: 14px;
-  }
-
-  .mobile-cart-bar div div {
-    font-size: 13px;
-    color: rgba(255,255,255,0.75);
-    margin-top: 2px;
+    border-radius: 14px;
+    padding: 13px 22px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
   }
 
   .content {
-    padding-bottom: 90px;
+    padding-bottom: 110px;
   }
 }
 
@@ -996,15 +1031,44 @@ const addToCart = (p) => {
         </span>
       )}
 
-      {inCart > 0 && (
-        <span className="badge badge-green" style={{ fontSize: 10 }}>
-          Di keranjang: {inCart}
-        </span>
-      )}
-
       <div className="pstock">
         Sisa: {availableStock} {p.unit}
       </div>
+
+<div
+  className="mobile-product-actions"
+  onClick={(e) => e.stopPropagation()}
+>
+  {inCart > 0 ? (
+    <>
+      <button
+        className="qty-btn"
+        onClick={() => updateQty(p.id, -1)}
+      >
+        -
+      </button>
+
+      <span className="qty-num">{inCart}</span>
+
+      <button
+        className="qty-btn"
+        disabled={availableStock === 0}
+        onClick={() => availableStock > 0 && addToCart(p)}
+      >
+        +
+      </button>
+    </>
+  ) : (
+    <button
+      className="btn btn-outline btn-sm"
+      disabled={availableStock === 0}
+      onClick={() => availableStock > 0 && addToCart(p)}
+    >
+      Tambah
+    </button>
+  )}
+</div>
+
     </div>
   );
 })} 
@@ -1063,16 +1127,17 @@ const addToCart = (p) => {
       </div>
 
 {cart.length > 0 && (
-  <div className="mobile-cart-bar">
+  <div className="mobile-checkout-bar">
     <div>
-      <strong>{cartCount} item</strong>
-      <div>{fmt(total)}</div>
+      <div className="mobile-checkout-label">Total</div>
+      <strong>{fmt(total)}</strong>
     </div>
+
     <button
-      className="btn btn-primary btn-sm"
-      onClick={() => document.getElementById("cart-panel")?.scrollIntoView({ behavior: "smooth" })}
+      className="mobile-buy-btn"
+      onClick={() => setShowPayModal(true)}
     >
-      Lihat Keranjang
+      Beli ({cartCount})
     </button>
   </div>
 )}
