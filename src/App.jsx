@@ -403,7 +403,130 @@ const styles = `
     padding-bottom: 110px;
   }
 }
+<div
+  className="mobile-sheet-head"
+  onClick={() => setCartOpen(v => !v)}
+>
+  <div className="sheet-handle"></div>
 
+  <div className="sheet-summary">
+    <div>
+      <div className="mobile-checkout-label">Total</div>
+      <strong>{fmt(total)}</strong>
+    </div>
+
+    <button
+      className="mobile-buy-btn"
+      disabled={cart.length === 0}
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowPayModal(true);
+      }}
+    >
+      Beli ({cartCount})
+    </button>
+  </div>
+</div>
+/* MOBILE CART BOTTOM SHEET FIX */
+.mobile-sheet-head {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #cart-panel.mobile-cart-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-height: 82vh !important;
+    z-index: 9999 !important;
+    background: #fff !important;
+    border-radius: 24px 24px 0 0 !important;
+    box-shadow: 0 -10px 35px rgba(0,0,0,0.18) !important;
+    transform: translateY(calc(100% - 112px)) !important;
+    transition: transform 0.28s ease !important;
+    overflow: hidden !important;
+  }
+
+  #cart-panel.mobile-cart-sheet.open {
+    transform: translateY(0) !important;
+  }
+
+  #cart-panel.mobile-cart-sheet .mobile-sheet-head {
+    display: block !important;
+    padding: 10px 18px 14px !important;
+    background: #fff !important;
+    border-bottom: 1px solid var(--border) !important;
+    cursor: pointer !important;
+  }
+
+  .sheet-handle {
+    width: 72px;
+    height: 7px;
+    border-radius: 99px;
+    background: #dce1ea;
+    margin: 0 auto 14px;
+  }
+
+  .sheet-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .mobile-checkout-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .sheet-summary strong {
+    font-size: 24px;
+    color: var(--text);
+  }
+
+  .mobile-buy-btn {
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 14px;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .mobile-buy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  #cart-panel.mobile-cart-sheet .cart-header {
+    display: none !important;
+  }
+
+  #cart-panel.mobile-cart-sheet .cart-items {
+    max-height: 42vh !important;
+    overflow-y: auto !important;
+    padding: 12px 18px !important;
+  }
+
+  #cart-panel.mobile-cart-sheet .cart-footer {
+    padding: 14px 18px 24px !important;
+  }
+
+  .mobile-checkout-bar {
+    display: none !important;
+  }
+
+  .content {
+    padding-bottom: 130px !important;
+  }
+}
 @media print {
   body * {
     visibility: hidden !important;
@@ -840,6 +963,7 @@ function Dashboard({ transactions, products }) {
 // ─── CASHIER ─────────────────────────────────────────────────────────────────
 function Cashier({ products, onTransaction, settings }) {
   const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [payMethod, setPayMethod] = useState("Tunai");
   const [cashInput, setCashInput] = useState("");
@@ -1014,7 +1138,7 @@ const addToCart = (p) => {
       key={p.id}
       className={
   "product-card-pos" +
-  (availableStock === 0 ? " out-of-stock" : "") +
+  (availableStock === 0 && inCart === 0 ? " out-of-stock" : "") +
   (inCart > 0 ? " in-cart" : "")
 }
       onClick={() => availableStock > 0 && addToCart(p)}
@@ -1078,7 +1202,39 @@ const addToCart = (p) => {
       </div>
 
       {/* CART */}
-      <div id="cart-panel" className="cart-panel">
+
+      <div
+  id="cart-panel"
+  className={
+    "cart-panel mobile-cart-sheet" +
+    (cartOpen ? " open" : "")
+  }
+>
+
+<div
+  className="mobile-sheet-head"
+  onClick={() => setCartOpen(v => !v)}
+>
+  <div className="sheet-handle"></div>
+
+  <div className="sheet-summary">
+    <div>
+      <div className="mobile-checkout-label">Total</div>
+      <strong>{fmt(total)}</strong>
+    </div>
+
+    <button
+      className="mobile-buy-btn"
+      disabled={cart.length === 0}
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowPayModal(true);
+      }}
+    >
+      Beli ({cartCount})
+    </button>
+  </div>
+</div>
         <div className="cart-header">
           <div style={{ fontFamily: "Sora", fontWeight: 700, fontSize: 15 }}>🛒 Keranjang</div>
           {cart.length > 0 && (
@@ -1125,22 +1281,6 @@ const addToCart = (p) => {
           </button>
         </div>
       </div>
-
-{cart.length > 0 && (
-  <div className="mobile-checkout-bar">
-    <div>
-      <div className="mobile-checkout-label">Total</div>
-      <strong>{fmt(total)}</strong>
-    </div>
-
-    <button
-      className="mobile-buy-btn"
-      onClick={() => setShowPayModal(true)}
-    >
-      Beli ({cartCount})
-    </button>
-  </div>
-)}
 
       {showPayModal && (
         <div className="modal-overlay">
