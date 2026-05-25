@@ -366,28 +366,46 @@ const styles = `
     width: 100%;
     height: auto;
     max-height: none;
-    flex-direction: column;
+    padding: 0;
     overflow: visible;
   }
 
   .sidebar-brand {
-    padding: 16px;
+    padding: 12px 14px 10px;
     text-align: center;
   }
 
   .sidebar-brand .brand-badge {
-    margin: 0 auto 10px;
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 8px;
+    font-size: 20px;
   }
 
   .sidebar-brand .store-name {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.25;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .sidebar-brand .store-sub {
+    font-size: 11px;
+    margin-top: 4px;
   }
 
   .sidebar-section {
     display: flex;
     overflow-x: auto;
-    gap: 8px;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 8px 10px 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-section::-webkit-scrollbar {
+    height: 3px;
   }
 
   .sidebar-label {
@@ -395,10 +413,18 @@ const styles = `
   }
 
   .nav-item {
-    min-width: max-content;
+    flex: 0 0 auto;
+    min-width: auto;
     margin-bottom: 0;
-    padding: 10px 14px;
+    padding: 9px 12px;
     font-size: 13px;
+    border-radius: 10px;
+    gap: 7px;
+  }
+
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
   }
 
   .nav-item span {
@@ -406,7 +432,13 @@ const styles = `
   }
 
   .nav-badge {
-    margin-left: 6px;
+    margin-left: 4px;
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+
+  .sidebar > div:last-child {
+    display: none;
   }
 
   .main {
@@ -416,45 +448,113 @@ const styles = `
 
   .topbar {
     height: auto;
-    padding: 14px 16px;
-    flex-wrap: wrap;
-    gap: 10px;
+    padding: 10px 14px;
+    gap: 8px;
   }
 
   .topbar-title {
-    font-size: 18px;
+    font-size: 17px;
+  }
+
+  .topbar-time {
+    font-size: 11px;
   }
 
   .topbar-right {
     gap: 8px;
   }
 
+  .topbar .btn,
+  .topbar button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
   .content {
-    padding: 16px;
+    padding: 14px;
     overflow: visible;
   }
 
-  .stats-grid,
+  .page-header {
+    margin-bottom: 14px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    min-height: auto;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    top: 14px;
+    right: 14px;
+  }
+
   .grid-2,
   .grid-3 {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 14px;
   }
 
   .cashier-layout {
     display: flex;
     flex-direction: column;
     height: auto;
-    gap: 16px;
+    gap: 14px;
   }
 
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow: visible;
     padding-right: 0;
+    gap: 10px;
   }
 
   .product-card-pos {
-    min-height: 130px;
+    padding: 12px;
+    min-height: 120px;
+  }
+
+  .product-card-pos .emoji {
+    font-size: 28px;
+  }
+
+  .product-card-pos .pname {
+    font-size: 12px;
   }
 
   .cart-panel {
@@ -469,22 +569,13 @@ const styles = `
   .search-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
   .search-bar .input-group,
   .search-bar .input,
   .search-bar button {
     width: 100% !important;
-  }
-
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .page-title {
-    font-size: 20px;
   }
 
   .submenu-tabs {
@@ -494,7 +585,9 @@ const styles = `
   }
 
   .submenu-tab {
-    min-width: max-content;
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 7px 12px;
   }
 
   .table-wrap {
@@ -505,9 +598,15 @@ const styles = `
     min-width: 720px;
   }
 
+  th,
+  td {
+    padding: 10px;
+    font-size: 12px;
+  }
+
   .modal {
     width: calc(100vw - 24px);
-    padding: 20px;
+    padding: 18px;
   }
 
   .form-grid {
