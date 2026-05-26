@@ -245,10 +245,53 @@ const styles = `
   .cart-item-info { flex: 1; }
   .cart-item-name { font-size: 12.5px; font-weight: 600; }
   .cart-item-price { font-size: 12px; color: var(--text-muted); }
+.cart-item .qty-btn {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.cart-item .qty-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
   .qty-ctrl { display: flex; align-items: center; gap: 6px; }
-  .qty-btn { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: all 0.12s; }
-  .qty-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .qty-num { font-size: 14px; font-weight: 700; min-width: 24px; text-align: center; }
+  .qty-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.qty-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.qty-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: var(--text-muted);
+}
+
+.qty-num {
+  min-width: 26px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text);
+}
   .cart-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
   .cart-total-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13.5px; }
   .cart-total-row.grand { font-size: 16px; font-weight: 800; color: var(--primary); margin-top: 8px; padding-top: 10px; border-top: 2px dashed var(--border); }
@@ -1017,12 +1060,12 @@ const addToCart = (p) => {
     });
   };
 
-  const subtotal = cart.reduce((s, c) => {
-    const disc = c.discount || 0;
-    return s + Math.round(c.price * c.qty * (1 - disc / 100));
+  const subtotal = cart.reduce((sum, item) => {
+  const disc = item.discount || 0;
+    return sum + Math.round(item.price * item.qty * (1 - disc / 100));
   }, 0);
-  const discountAmt = Math.round(subtotal * discount / 100);
-  const total = subtotal - discountAmt;
+  const discountAmount = Number(discount || 0);
+  const total = Math.max(0, subtotal - discountAmount);
   const cash = parseFloat(cashInput) || 0;
   const change = cash - total;
 
@@ -1264,23 +1307,47 @@ const addToCart = (p) => {
             );
           })}
         </div>
-        <div className="cart-footer">
-          <div className="form-row">
-            <label>Diskon Tambahan (%)</label>
-            <input className="input" type="number" min="0" max="100" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
-          </div>
-          <div className="cart-total-row"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-          {discount > 0 && <div className="cart-total-row" style={{ color: "var(--danger)" }}><span>Diskon {discount}%</span><span>-{fmt(discountAmt)}</span></div>}
-          <div className="cart-total-row grand"><span>TOTAL</span><span>{fmt(total)}</span></div>
-          <button
-            className="btn btn-primary" style={{ width: "100%", marginTop: 12, padding: "13px" }}
-            disabled={cart.length === 0}
-            onClick={() => setShowPayModal(true)}
-          >
-            <Icon name="cart" /> Bayar Sekarang
-          </button>
-        </div>
-      </div>
+
+<div className="cart-footer">
+  <div className="form-row">
+    <label>Diskon Tambahan (Rp)</label>
+    <input
+      className="input"
+      type="number"
+      min="0"
+      value={discount}
+      onChange={e => setDiscount(Number(e.target.value || 0))}
+      placeholder="Contoh: 5000"
+    />
+  </div>
+
+  <div className="cart-total-row">
+    <span>Subtotal</span>
+    <span>{fmt(subtotal)}</span>
+  </div>
+
+  {discountAmount > 0 && (
+    <div className="cart-total-row" style={{ color: "var(--danger)" }}>
+      <span>Diskon Tambahan</span>
+      <span>-{fmt(discountAmount)}</span>
+    </div>
+  )}
+
+  <div className="cart-total-row grand">
+    <span>TOTAL</span>
+    <span>{fmt(total)}</span>
+  </div>
+
+  <button
+    className="btn btn-primary"
+    style={{ width: "100%", marginTop: 12, padding: "13px" }}
+    disabled={cart.length === 0}
+    onClick={() => setShowPayModal(true)}
+  >
+    <Icon name="cart" /> Bayar Sekarang
+  </button>
+</div>
+</div>
 
       {showPayModal && (
         <div className="modal-overlay">
