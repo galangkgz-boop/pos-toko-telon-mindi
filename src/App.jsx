@@ -226,17 +226,20 @@ const styles = `
   .cashier-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; height: calc(100vh - 60px - 48px); }
   .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; overflow-y: auto; padding-right: 4px; }
   .product-card-pos {
-    background: var(--card); border-radius: 12px; padding: 14px; cursor: pointer;
-    transition: all 0.15s; border: 2px solid transparent; box-shadow: var(--shadow);
-    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
-    user-select: none;
-  }
+  background: #ffffff;
+  border: 1px solid #dbe4ea;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+}
   .product-card-pos:hover { border-color: var(--primary); transform: translateY(-2px); }
   .product-card-pos .emoji { font-size: 32px; }
   .product-card-pos .pname { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .product-card-pos .pprice { font-size: 12px; color: var(--primary); font-weight: 700; }
   .product-card-pos .pstock { font-size: 11px; color: var(--text-muted); }
-  .product-card-pos.out-of-stock { opacity: 0.5; pointer-events: none; }
+  .product-card-pos.out-of-stock {
+  opacity: 0.55;
+  background: #f8fafc;
+}
 
   .cart-panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; }
   .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
@@ -372,7 +375,8 @@ const styles = `
 
 .product-card-pos.in-cart {
   border-color: var(--primary);
-  background: var(--primary-soft);
+  background: #eefaf6;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16);
 }
 
 .mobile-product-actions {
@@ -1077,7 +1081,14 @@ function Cashier({ products, onTransaction, settings, variants }) {
   const [discount, setDiscount] = useState(0);
   const [catFilter, setCatFilter] = useState("Semua");
 
-  const activeProducts = products.filter(p => p.active);
+  const activeProducts = products
+  .filter(p => p.active)
+  .sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), "id", {
+      numeric: true,
+      sensitivity: "base",
+    })
+  );
   const categories = ["Semua", ...Array.from(new Set(activeProducts.map(p => p.category)))];
 
 const getCartQty = (productId) => {
