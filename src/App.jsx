@@ -480,22 +480,6 @@ const styles = `
 </div>
 
 /* SIDEBAR COLLAPSE */
-.sidebar-toggle {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border-radius: 12px;
-  font-size: 20px;
-  font-weight: 800;
-  cursor: pointer;
-  z-index: 20;
-}
-
 .sidebar {
   position: relative;
   transition: width 0.25s ease;
@@ -697,21 +681,6 @@ const styles = `
 .variant-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-.sidebar-toggle {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border-radius: 12px;
-  font-size: 20px;
-  font-weight: 800;
-  cursor: pointer;
-  z-index: 20;
 }
 
 .sidebar {
@@ -3317,18 +3286,13 @@ setSettings(rowsToSettings(settingRows));
   ☰
 </button>
         <aside className="sidebar">
-          <button
-            type="button"
-            className="sidebar-toggle"
-            onClick={() => setSidebarOpen(v => !v)}
-            >
-            ☰
-          </button>
           <div className="sidebar-brand">
-            <div className="brand-badge">🌿</div>
-            <div className="store-name">Toko <div className="store-name">{settings.store_name || "Agen Sosis & Es Kristal Toko Telon Mindi"}</div> Mindi</div>
-            <div className="store-sub">Point of Sale System</div>
-          </div>
+  <div className="brand-badge">🌿</div>
+  <div className="store-name">
+    {settings.store_name || "Agen Sosis & Es Kristal Toko Telon Mindi"}
+  </div>
+  <div className="store-sub">Point of Sale System</div>
+</div>
           <div className="sidebar-section">
             <div className="sidebar-label">Menu Utama</div>
             {navItems.map(item => (
