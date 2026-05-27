@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://xosrquegrqkejbidxaan.supabase.co";
@@ -478,6 +478,70 @@ const styles = `
     </button>
   </div>
 </div>
+
+/* SIDEBAR COLLAPSE */
+.sidebar-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 20;
+}
+
+.sidebar {
+  position: relative;
+  transition: width 0.25s ease;
+}
+
+.app.sidebar-collapsed .sidebar {
+  width: 78px;
+  min-width: 78px;
+}
+
+.app.sidebar-collapsed .sidebar-brand {
+  padding: 18px 10px;
+}
+
+.app.sidebar-collapsed .sidebar-brand .store-name,
+.app.sidebar-collapsed .sidebar-brand .store-sub,
+.app.sidebar-collapsed .sidebar-label,
+.app.sidebar-collapsed .nav-item span,
+.app.sidebar-collapsed .sidebar > div:last-child {
+  display: none !important;
+}
+
+.app.sidebar-collapsed .sidebar-brand .brand-badge {
+  margin: 44px auto 0;
+}
+
+.app.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 14px;
+  margin: 8px 10px;
+}
+
+.app.sidebar-collapsed .nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  margin: 0;
+  font-size: 10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+  
 /* MOBILE CART BOTTOM SHEET FIX */
 .mobile-sheet-head {
   display: none;
@@ -633,6 +697,83 @@ const styles = `
 .variant-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+.sidebar-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 20;
+}
+
+.sidebar {
+  position: relative;
+  transition: width 0.25s ease;
+}
+
+.app.sidebar-collapsed .sidebar {
+  width: 78px;
+  min-width: 78px;
+}
+
+.app.sidebar-collapsed .sidebar-brand {
+  padding: 18px 10px;
+}
+
+.app.sidebar-collapsed .sidebar-brand .store-name,
+.app.sidebar-collapsed .sidebar-brand .store-sub,
+.app.sidebar-collapsed .sidebar-label,
+.app.sidebar-collapsed .nav-item span,
+.app.sidebar-collapsed .sidebar > div:last-child {
+  display: none !important;
+}
+
+.app.sidebar-collapsed .sidebar-brand .brand-badge {
+  margin: 44px auto 0;
+}
+
+.app.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 14px;
+  margin: 8px 10px;
+}
+
+.app.sidebar-collapsed .nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  margin: 0;
+  font-size: 10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+  .cashier-toolbar,
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-bar .input-group {
+  flex: 1;
+}
+
+.search-bar select,
+.search-bar .select,
+.search-bar .input {
+  min-height: 48px;
 }
 
 @media print {
@@ -1589,6 +1730,8 @@ function Products({ products, setProducts, transactions }) {
   const [form, setForm] = useState({ name: "", category: "", price: "", cost: "", stock: "", unit: "pcs", image: "🛍️", discount: 0, active: true });
   const [stockModal, setStockModal] = useState(null);
   const [stockAdj, setStockAdj] = useState({ type: "tambah", qty: "", cost: "", note: "" });
+  const savingProductRef = useRef(false);
+  const [savingProduct, setSavingProduct] = useState(false);
 
   const subMenus = [
     { id: "daftar", label: "📦 Daftar Produk" },
@@ -1617,6 +1760,10 @@ function Products({ products, setProducts, transactions }) {
     alert("Nama produk dan harga jual wajib diisi");
     return;
   }
+
+  if (savingProductRef.current) return;
+    savingProductRef.current = true;
+    setSavingProduct(true);
 
   const payload = {
     name: form.name,
@@ -1649,8 +1796,11 @@ function Products({ products, setProducts, transactions }) {
     setShowModal(false);
     setEditProduct(null);
   } catch (err) {
-    alert("Gagal menyimpan produk: " + err.message);
-  }
+  alert("Gagal menyimpan produk: " + err.message);
+} finally {
+  savingProductRef.current = false;
+  setSavingProduct(false);
+}
 };
 const deleteProduct = async (id) => {
   const product = products.find(p => p.id === id);
@@ -2046,8 +2196,8 @@ const toggleStockManagement = async (id) => {
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Batal</button>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={saveProduct}>
-                <Icon name="check" /> Simpan
+              <button type="button" className="btn btn-primary" onClick={saveProduct} disabled={savingProduct}>
+                <Icon name="check" /> {savingProduct ? "Menyimpan..." : "Simpan"}
               </button>
             </div>
           </div>
@@ -2645,6 +2795,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null); // 'saving' | 'saved' | 'error'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -3016,8 +3167,15 @@ setSettings(rowsToSettings(settingRows));
           {syncStatus === "error" && "❌ Gagal menyimpan"}
         </div>
       )}
-      <div className="app">
+      <div className={sidebarCollapsed ? "app sidebar-collapsed" : "app"}>
         <aside className="sidebar">
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(v => !v)}
+            >
+            ☰
+          </button>
           <div className="sidebar-brand">
             <div className="brand-badge">🌿</div>
             <div className="store-name">Toko <div className="store-name">{settings.store_name || "Agen Sosis & Es Kristal Toko Telon Mindi"}</div> Mindi</div>
