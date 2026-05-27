@@ -241,9 +241,18 @@ const styles = `
   background: #f8fafc;
 }
 
-  .cart-panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .cart-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px);
+  overflow: hidden;
+}
   .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .cart-items { flex: 1; overflow-y: auto; padding: 12px; }
+  .cart-items {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
   .cart-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; margin-bottom: 8px; background: var(--bg); }
   .cart-item-info { flex: 1; }
   .cart-item-name { font-size: 12.5px; font-weight: 600; }
@@ -295,9 +304,40 @@ const styles = `
   font-size: 16px;
   color: var(--text);
 }
-  .cart-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
-  .cart-total-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13.5px; }
-  .cart-total-row.grand { font-size: 16px; font-weight: 800; color: var(--primary); margin-top: 8px; padding-top: 10px; border-top: 2px dashed var(--border); }
+  .cart-footer {
+  padding: 14px 18px !Important;
+  flex-shrink: 0;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+.cart-footer .form-row {
+  margin-bottom: 10px !important;
+}
+
+.cart-footer .form-row label {
+  font-size: 12px !important;
+  margin-bottom: 6px !important;
+  color: var(--text-muted);
+}
+
+.cart-footer .input {
+  height: 42px !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+}
+
+.cart-footer .btn-primary {
+  height: 48px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  border-radius: 14px !important;
+}
+
+  .cart-total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px !Important; font-size: 14px !Important; }
+  .cart-total-row.grand { margin-top: 8px !Important; padding-top: 10px !Important; border-top: 1px dashed var(--border); font-size: 18px !Important; font-weight: 900; }
 
   /* MODAL */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(3px); }
@@ -876,6 +916,30 @@ const styles = `
     font-size: 14px;
   }
 }
+.payment-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.payment-chip {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.payment-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
 
 @media print {
   body * {
@@ -1423,11 +1487,37 @@ const addVariantToCart = (p, variant) => {
 };
 
   const updateQty = (id, delta) => {
-    setCart(prev => {
-      const updated = prev.map(c => c.id === id ? { ...c, qty: c.qty + delta } : c).filter(c => c.qty > 0);
-      return updated;
-    });
-  };
+  const target = cart.find(item => item.id === id);
+  if (!target) return;
+
+  const productId = Number(target.productId || target.id);
+  const product = products.find(p => Number(p.id) === productId);
+  const stock = Number(product?.stock || 0);
+  const multiplier = Number(target.stockQtyPerItem || 1);
+
+  if (delta > 0) {
+    const usedStockQty = cart
+      .filter(item => Number(item.productId || item.id) === productId)
+      .reduce((sum, item) => {
+        return sum + Number(item.qty || 0) * Number(item.stockQtyPerItem || 1);
+      }, 0);
+
+    if (usedStockQty + multiplier > stock) {
+      alert("Stok " + target.name + " tidak cukup.");
+      return;
+    }
+  }
+
+  setCart(prev =>
+    prev
+      .map(item =>
+        item.id === id
+          ? { ...item, qty: Math.max(0, Number(item.qty || 0) + delta) }
+          : item
+      )
+      .filter(item => Number(item.qty || 0) > 0)
+  );
+};
 
   const subtotal = cart.reduce((sum, item) => {
   const disc = item.discount || 0;
@@ -1435,7 +1525,42 @@ const addVariantToCart = (p, variant) => {
   }, 0);
   const discountAmount = Number(discount || 0);
   const total = Math.max(0, subtotal - discountAmount);
-  const cash = parseFloat(cashInput) || 0;
+  const getPaymentSuggestions = (amount) => {
+  const totalAmount = Number(amount || 0);
+
+  const commonBills = [
+    5000,
+    10000,
+    20000,
+    50000,
+    100000,
+    150000,
+    200000,
+    300000,
+    500000,
+  ];
+
+  const roundedUp = [
+    Math.ceil(totalAmount / 5000) * 5000,
+    Math.ceil(totalAmount / 10000) * 10000,
+    Math.ceil(totalAmount / 50000) * 50000,
+    Math.ceil(totalAmount / 100000) * 100000,
+  ];
+
+  return Array.from(
+    new Set([
+      totalAmount,
+      ...commonBills.filter(v => v >= totalAmount),
+      ...roundedUp.filter(v => v >= totalAmount),
+    ])
+  )
+    .filter(v => v > 0)
+    .sort((a, b) => a - b)
+    .slice(0, 5);
+};
+
+const paymentSuggestions = getPaymentSuggestions(total);
+  const cash = Number(cashInput) || 0;
   const change = cash - total;
 
   const handlePay = async() => {
@@ -1515,8 +1640,15 @@ try {
             </div>
             {lastTxn.payMethod === "Tunai" && (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Bayar</span><span>{fmt(cash)}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kembalian</span><span>{fmt(Math.max(0, cash - lastTxn.total))}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+  <span>Bayar</span>
+  <span>{fmt(Number(lastTxn.paid || lastTxn.cashReceived || lastTxn.payment || 0))}</span>
+</div>
+
+<div style={{ display: "flex", justifyContent: "space-between" }}>
+  <span>Kembalian</span>
+  <span>{fmt(Number(lastTxn.change || 0))}</span>
+</div>
               </>
             )}
             <hr className="receipt-divider" />
@@ -1725,7 +1857,6 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
                 <div>{c.image}</div>
                 <div className="cart-item-info">
                   <div className="cart-item-name">{c.name}</div>
-                  <div className="cart-item-price">{fmt(disc ? Math.round(c.price * (1 - disc / 100)) : c.price)} {disc > 0 && <span className="badge badge-orange" style={{ fontSize: 10 }}>-{disc}%</span>}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)" }}>{fmt(itemTotal)}</div>
                 </div>
                 <div className="qty-ctrl">
@@ -1803,7 +1934,34 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
               <>
                 <div className="form-row">
                   <label>Uang Diterima</label>
-                  <input className="input" type="number" placeholder="Masukkan nominal uang..." value={cashInput} onChange={e => setCashInput(e.target.value)} autoFocus />
+                  <input
+  className="input"
+  type="text"
+  inputMode="numeric"
+  value={cashInput ? Number(cashInput || 0).toLocaleString("id-ID") : ""}
+  onChange={e => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const cleanValue = rawValue.replace(/^0+(?=\d)/, "");
+    setCashInput(cleanValue);
+  }}
+  placeholder="Masukkan uang diterima"
+/>
+<div className="payment-suggestions">
+  {paymentSuggestions.map(amount => (
+    <button
+      key={amount}
+      type="button"
+      className={
+        Number(cashInput || 0) === amount
+          ? "payment-chip active"
+          : "payment-chip"
+      }
+      onClick={() => setCashInput(String(amount))}
+    >
+      {amount === total ? "Pas" : fmt(amount)}
+    </button>
+  ))}
+</div>
                 </div>
                 {cash > 0 && (
                   <div style={{ padding: "12px 16px", background: change >= 0 ? "#e8f5f2" : "#fdecea", borderRadius: 10, marginBottom: 12 }}>
@@ -1866,29 +2024,25 @@ function Products({ products, setProducts, transactions }) {
   };
 
  const saveProduct = async () => {
-  if (!form.name || !form.price) {
-    alert("Nama produk dan harga jual wajib diisi");
-    return;
-  }
-
   if (savingProductRef.current) return;
-    savingProductRef.current = true;
-    setSavingProduct(true);
 
-  const payload = {
-    name: form.name,
-    category: form.category || "",
-    price: Number(form.price || 0),
-    cost: Number(form.cost || 0),
-    stock: Number(form.stock || 0),
-    unit: form.unit || "pcs",
-    image: form.image || "🛍️",
-    discount: Number(form.discount || 0),
-    active: form.active ?? true,
-    stock_management: form.stock_management ?? false,
-  };
+  savingProductRef.current = true;
+  setSavingProduct(true);
 
   try {
+    const payload = {
+      name: form.name,
+      category: form.category,
+      price: Number(form.price || 0),
+      cost: Number(form.cost || 0),
+      stock: Number(form.stock || 0),
+      unit: form.unit || "pcs",
+      image: form.image || "🛍️",
+      discount: Number(form.discount || 0),
+      active: form.active !== false,
+      stock_management: form.stock_management || false,
+    };
+
     if (editProduct) {
       const [updatedProduct] = await sb.patch("products", editProduct.id, payload);
 
@@ -1898,20 +2052,30 @@ function Products({ products, setProducts, transactions }) {
         )
       );
     } else {
-      const [newProduct] = await sb.post("products", [payload]);
 
-      setProducts(prev => [...prev, newProduct]);
+const [newProduct] = await sb.post("products", [payload]);
+
+setProducts(prev => {
+  const exists = prev.some(p => Number(p.id) === Number(newProduct.id));
+  return exists ? prev : [...prev, newProduct];
+});
+
+      setProducts(prev => {
+        const exists = prev.some(p => Number(p.id) === Number(newProduct.id));
+        return exists ? prev : [...prev, newProduct];
+      });
     }
 
     setShowModal(false);
     setEditProduct(null);
   } catch (err) {
-  alert("Gagal menyimpan produk: " + err.message);
-} finally {
-  savingProductRef.current = false;
-  setSavingProduct(false);
-}
+    alert("Gagal menyimpan produk: " + err.message);
+  } finally {
+    savingProductRef.current = false;
+    setSavingProduct(false);
+  }
 };
+
 const deleteProduct = async (id) => {
   const product = products.find(p => p.id === id);
   if (!product) return;
@@ -2306,9 +2470,19 @@ const toggleStockManagement = async (id) => {
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Batal</button>
-              <button type="button" className="btn btn-primary" onClick={saveProduct} disabled={savingProduct}>
-                <Icon name="check" /> {savingProduct ? "Menyimpan..." : "Simpan"}
-              </button>
+              <button
+  type="button"
+  className="btn btn-primary"
+  style={{ flex: 1 }}
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    saveProduct();
+  }}
+  disabled={savingProduct}
+>
+  <Icon name="check" /> {savingProduct ? "Menyimpan..." : "Simpan"}
+</button>
             </div>
           </div>
         </div>
@@ -3195,8 +3369,7 @@ setSettings(rowsToSettings(settingRows));
     try {
       for (const p of added) {
         const { id, ...rest } = p;
-        const [saved] = await sb.post("products", [rest]);
-        setProducts(prev => prev.map(x => x.id === p.id ? saved : x));
+       // const [saved] = await sb.post("products", [payload]);
       }
       for (const p of deleted) await sb.delete("products", p.id);
       for (const p of updated) {
