@@ -776,6 +776,119 @@ const styles = `
   min-height: 48px;
 }
 
+/* MOBILE DRAWER SIDEBAR */
+.mobile-menu-button {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-button {
+    display: flex;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--primary);
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    z-index: 10001;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  }
+
+  .app {
+    display: block !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 82vw !important;
+    max-width: 360px !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    transform: translateX(-110%) !important;
+    transition: transform 0.25s ease !important;
+    border-radius: 0 26px 26px 0 !important;
+    box-shadow: 18px 0 45px rgba(15, 23, 42, 0.24) !important;
+    overflow-y: auto !important;
+  }
+
+  .app.sidebar-open .sidebar {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 9999;
+  }
+
+  .topbar {
+    padding-left: 76px !important;
+  }
+
+  .main {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-button,
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  .sidebar {
+    transform: none !important;
+  }
+}
+
+.category-chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+}
+
+.category-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.category-chip.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -845,47 +958,32 @@ const styles = `
   }
 
   .sidebar-section {
-    display: flex;
-    overflow-x: auto;
-    gap: 6px;
-    padding: 8px 10px 10px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    -webkit-overflow-scrolling: touch;
-  }
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 12px 18px !important;
+  overflow: visible !important;
+}
 
-  .sidebar-section::-webkit-scrollbar {
-    height: 3px;
-  }
+.nav-item {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 14px !important;
+  padding: 16px 18px !important;
+  margin: 0 !important;
+  border-radius: 18px !important;
+}
 
-  .sidebar-label {
-    display: none;
-  }
+.nav-item span {
+  display: inline !important;
+  white-space: nowrap !important;
+}
 
-  .nav-item {
-    flex: 0 0 auto;
-    min-width: auto;
-    margin-bottom: 0;
-    padding: 9px 12px;
-    font-size: 13px;
-    border-radius: 10px;
-    gap: 7px;
-  }
-
-  .nav-item svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .nav-item span {
-    white-space: nowrap;
-  }
-
-  .nav-badge {
-    margin-left: 4px;
-    padding: 2px 7px;
-    font-size: 10px;
-  }
+.nav-badge {
+  margin-left: auto !important;
+}
 
   .sidebar > div:last-child {
     display: none;
@@ -1230,7 +1328,14 @@ function Cashier({ products, onTransaction, settings, variants }) {
       sensitivity: "base",
     })
   );
-  const categories = ["Semua", ...Array.from(new Set(activeProducts.map(p => p.category)))];
+  const categories = [...new Set(activeProducts.map(p => p.category).filter(Boolean))]
+  .filter(c => c !== "Semua")
+  .sort((a, b) =>
+    String(a || "").localeCompare(String(b || ""), "id", {
+      numeric: true,
+      sensitivity: "base",
+    })
+  );
 
 const getCartQty = (productId) => {
   const found = cart.find(c => c.id === productId);
@@ -1460,9 +1565,26 @@ try {
             <span className="input-icon"><Icon name="search" size={15} /></span>
             <input className="input" placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className="input" style={{ width: 160 }} value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-            {categories.map(c => <option key={c}>{c}</option>)}
-          </select>
+          <div className="category-chips">
+  <button
+    type="button"
+    className={catFilter === "Semua" ? "category-chip active" : "category-chip"}
+    onClick={() => setCatFilter("Semua")}
+  >
+    Semua
+  </button>
+
+  {categories.map(c => (
+    <button
+      type="button"
+      key={c}
+      className={catFilter === c ? "category-chip active" : "category-chip"}
+      onClick={() => setCatFilter(c)}
+    >
+      {c}
+    </button>
+  ))}
+</div>
         </div>
         <div className="product-grid">
          {filtered.map(p => {
@@ -2795,7 +2917,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null); // 'saving' | 'saved' | 'error'
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -3167,12 +3289,19 @@ setSettings(rowsToSettings(settingRows));
           {syncStatus === "error" && "❌ Gagal menyimpan"}
         </div>
       )}
-      <div className={sidebarCollapsed ? "app sidebar-collapsed" : "app"}>
+      <div className={sidebarOpen ? "app sidebar-open" : "app"}>
+        <button
+  type="button"
+  className="mobile-menu-button"
+  onClick={() => setSidebarOpen(true)}
+>
+  ☰
+</button>
         <aside className="sidebar">
           <button
             type="button"
             className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed(v => !v)}
+            onClick={() => setSidebarOpen(v => !v)}
             >
             ☰
           </button>
@@ -3184,7 +3313,10 @@ setSettings(rowsToSettings(settingRows));
           <div className="sidebar-section">
             <div className="sidebar-label">Menu Utama</div>
             {navItems.map(item => (
-              <div key={item.id} className={`nav-item ${page === item.id ? "active" : ""}`} onClick={() => setPage(item.id)}>
+              <div key={item.id} className={`nav-item ${page === item.id ? "active" : ""}`} onClick={() => {
+  setPage(item.id);
+  setSidebarOpen(false);
+}}>
                 <Icon name={item.icon} size={17} />
                 {item.label}
                 {item.id === "products" && lowStockCount > 0 && <span className="nav-badge">{lowStockCount}</span>}
@@ -3199,6 +3331,13 @@ setSettings(rowsToSettings(settingRows));
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>© 2026 Toko Telon Mindi</div>
           </div>
         </aside>
+
+        {sidebarOpen && (
+  <div
+    className="sidebar-backdrop"
+    onClick={() => setSidebarOpen(false)}
+  />
+)}
 
         <main className="main">
           <div className="topbar">
