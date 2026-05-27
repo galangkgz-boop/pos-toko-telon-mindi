@@ -376,7 +376,11 @@ const styles = `
 }
 
 .mobile-product-actions {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .mobile-checkout-bar {
@@ -570,6 +574,63 @@ const styles = `
     padding-bottom: 130px !important;
   }
 }
+
+.variant-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.variant-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 7px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  position: relative;
+}
+
+.variant-btn strong {
+  font-size: 11px;
+  color: var(--primary);
+}
+
+.variant-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.variant-btn em {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  font-style: normal;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.variant-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -1004,7 +1065,7 @@ function Dashboard({ transactions, products }) {
 }
 
 // ─── CASHIER ─────────────────────────────────────────────────────────────────
-function Cashier({ products, onTransaction, settings }) {
+function Cashier({ products, onTransaction, settings, variants }) {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -1025,6 +1086,27 @@ const getCartQty = (productId) => {
 };
 
 const cartCount = cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+
+const getProductVariants = (productId) => {
+  return (variants || []).filter(
+    v => Number(v.product_id) === Number(productId) && v.active !== false
+  );
+};
+
+const getCartStockQty = (productId) => {
+  return cart
+    .filter(item => Number(item.productId || item.id) === Number(productId))
+    .reduce((sum, item) => {
+      const multiplier = Number(item.stockQtyPerItem || 1);
+      return sum + Number(item.qty || 0) * multiplier;
+    }, 0);
+};
+
+const getVariantCartQty = (productId, variantId) => {
+  const cartId = productId + "-v-" + variantId;
+  const found = cart.find(item => item.id === cartId);
+  return found ? Number(found.qty || 0) : 0;
+};
 
   const filtered = activeProducts.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -1052,6 +1134,48 @@ const addToCart = (p) => {
     return [...prev, { ...p, qty: 1 }];
   });
 };  
+
+const addVariantToCart = (p, variant) => {
+  setCart(prev => {
+    const multiplier = Number(variant.qty_multiplier || 1);
+    const currentStockQty = getCartStockQty(p.id);
+    const stock = Number(p.stock || 0);
+
+    if (currentStockQty + multiplier > stock) {
+      alert("Stok " + p.name + " tidak cukup.");
+      return prev;
+    }
+
+    const cartId = p.id + "-v-" + variant.id;
+    const existing = prev.find(item => item.id === cartId);
+
+    if (existing) {
+      return prev.map(item =>
+        item.id === cartId
+          ? { ...item, qty: Number(item.qty || 0) + 1 }
+          : item
+      );
+    }
+
+    return [
+      ...prev,
+      {
+        id: cartId,
+        productId: p.id,
+        variantId: variant.id,
+        name: p.name + " - " + variant.name,
+        image: p.image,
+        price: Number(variant.price || 0),
+        cost: Number(p.cost || 0),
+        discount: 0,
+        qty: 1,
+        unit: p.unit,
+        stockQtyPerItem: multiplier,
+        stock_management: p.stock_management,
+      },
+    ];
+  });
+};
 
   const updateQty = (id, delta) => {
     setCart(prev => {
@@ -1173,8 +1297,10 @@ const addToCart = (p) => {
         </div>
         <div className="product-grid">
          {filtered.map(p => {
-  const inCart = getCartQty(p.id);
-  const availableStock = Math.max(0, Number(p.stock || 0) - inCart);
+  const productVariants = getProductVariants(p.id);
+const usedStockQty = getCartStockQty(p.id);
+const inCart = usedStockQty;
+const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
 
   return (
     <div
@@ -1206,33 +1332,58 @@ const addToCart = (p) => {
   className="mobile-product-actions"
   onClick={(e) => e.stopPropagation()}
 >
-  {inCart > 0 ? (
-    <>
-      <button
-        className="qty-btn"
-        onClick={() => updateQty(p.id, -1)}
-      >
-        -
-      </button>
+  {productVariants.length > 0 ? (
+    <div className="variant-buttons">
+      {productVariants.map(v => {
+        const variantQty = getVariantCartQty(p.id, v.id);
 
-      <span className="qty-num">{inCart}</span>
-
-      <button
-        className="qty-btn"
-        disabled={availableStock === 0}
-        onClick={() => availableStock > 0 && addToCart(p)}
-      >
-        +
-      </button>
-    </>
+        return (
+          <button
+            key={v.id}
+            className={
+              "variant-btn" + (variantQty > 0 ? " active" : "")
+            }
+            disabled={availableStock < Number(v.qty_multiplier || 1)}
+            onClick={() => addVariantToCart(p, v)}
+          >
+            <span>{v.name}</span>
+            <strong>{fmt(v.price)}</strong>
+            {variantQty > 0 && <em>{variantQty}</em>}
+          </button>
+        );
+      })}
+    </div>
   ) : (
-    <button
-      className="btn btn-outline btn-sm"
-      disabled={availableStock === 0}
-      onClick={() => availableStock > 0 && addToCart(p)}
-    >
-      Tambah
-    </button>
+    <>
+      {inCart > 0 ? (
+        <>
+          <button
+            className="qty-btn"
+            onClick={() => updateQty(p.id, -1)}
+          >
+            -
+          </button>
+
+          <span className="qty-num">{inCart}</span>
+
+          <button
+            className="qty-btn"
+            disabled={availableStock === 0}
+            onClick={() => availableStock > 0 && addToCart(p)}
+          >
+            +
+          </button>
+        </>
+      ) : (
+        <button
+          className="btn btn-outline btn-sm"
+          disabled={availableStock === 0}
+          onClick={() => availableStock > 0 && addToCart(p)}
+        >
+          Tambah
+        </button>
+      )}
+    </>
   )}
 </div>
 
@@ -1312,13 +1463,17 @@ const addToCart = (p) => {
   <div className="form-row">
     <label>Diskon Tambahan (Rp)</label>
     <input
-      className="input"
-      type="number"
-      min="0"
-      value={discount}
-      onChange={e => setDiscount(Number(e.target.value || 0))}
-      placeholder="Contoh: 5000"
-    />
+  className="input"
+  type="text"
+  inputMode="numeric"
+  value={Number(discount || 0).toLocaleString("id-ID")}
+  onChange={e => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const cleanValue = rawValue.replace(/^0+(?=\d)/, "");
+    setDiscount(Number(cleanValue || 0));
+  }}
+  placeholder="Contoh: 5.000"
+/>
   </div>
 
   <div className="cart-total-row">
@@ -2458,6 +2613,7 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [products, setProducts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null); // 'saving' | 'saved' | 'error'
@@ -2502,13 +2658,28 @@ const rowsToSettings = (rows) => {
     const prods = await sb.get("products", "?select=*&order=id.asc");
     setProducts(prods);
 
-    // 2. Load transactions dari Supabase
+    // 1.5 Load product variants
+    const variantRows = await sb.get(
+  "product_variants",
+  "?select=*&active=eq.true&order=product_id.asc&order=qty_multiplier.asc"
+);
+
+setVariants(
+  variantRows.map(v => ({
+    ...v,
+    product_id: Number(v.product_id),
+    qty_multiplier: Number(v.qty_multiplier || 1),
+    price: Number(v.price || 0),
+  }))
+);
+
+  // 2. Load transaksi utama
     const txns = await sb.get(
       "transactions",
       "?select=*&order=date.desc&limit=500"
     );
 
-    // 3. Load detail item transaksi
+    // 3. Load semua item transaksi (bisa dioptimasi dengan filter berdasarkan ID transaksi yang sudah di-load)
     const items = await sb.get(
       "transaction_items",
       "?select=*&order=id.asc"
@@ -2517,7 +2688,7 @@ const rowsToSettings = (rows) => {
     console.log("TRANSACTIONS FROM SUPABASE:", txns);
     console.log("TRANSACTION ITEMS FROM SUPABASE:", items);
 
-    // 4. Gabungkan transaksi dengan item-itemnya
+    // 4. Gabungkan data transaksi dengan itemnya
     const txnsWithItems = txns.map(t => ({
       ...t,
       total: Number(t.total || 0),
@@ -2569,7 +2740,7 @@ setSettings(rowsToSettings(settingRows));
         throw new Error(`Produk tidak ditemukan: ${item.name}`);
       }
 
-      const qtySold = Number(item.qty || 0);
+      const qtySold = Number(item.qty || 0) * Number(item.stockQtyPerItem || 1);
       let remainingQty = qtySold;
       let itemCost = 0;
 
@@ -2859,6 +3030,7 @@ setSettings(rowsToSettings(settingRows));
     products={products}
     onTransaction={handleTransaction}
     settings={settings}
+    variants={variants}
   />
 )}
             {page === "products" && <Products products={products} setProducts={setProductsWithSync} transactions={transactions} />}
