@@ -1193,27 +1193,44 @@ const addVariantToCart = (p, variant) => {
   const cash = parseFloat(cashInput) || 0;
   const change = cash - total;
 
-  const handlePay = () => {
+  const handlePay = async() => {
     const txn = {
       id: Date.now(),
       date: new Date().toISOString(),
       items: cart.map(c => ({
-        productId: c.id, name: c.name, qty: c.qty,
-        price: c.price, discount: c.discount || 0,
-        subtotal: Math.round(c.price * c.qty * (1 - (c.discount || 0) / 100))
-      })),
-      total, cost: cart.reduce((s, c) => s + c.cost * c.qty, 0),
-      profit: total - cart.reduce((s, c) => s + c.cost * c.qty, 0),
-      payMethod
-    };
+  productId: Number(c.productId || c.id),
+  variantId: c.variantId || null,
+  name: c.name,
+  qty: Number(c.qty || 0),
+  stockQtyPerItem: Number(c.stockQtyPerItem || 1),
+  price: Number(c.price || 0),
+  cost: Number(c.cost || 0),
+  discount: Number(c.discount || 0),
+  subtotal: Math.round(Number(c.price || 0) * Number(c.qty || 0) * (1 - Number(c.discount || 0) / 100))
+})),
+      total,
+  cost: cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+  profit: total - cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+  payMethod,
+  paid: cash,
+  cashReceived: cash,
+  payment: cash,
+  change
+};
     txn.profit = txn.total - txn.cost;
-    onTransaction(txn);
-    setLastTxn(txn);
-    setCart([]);
-    setDiscount(0);
-    setCashInput("");
-    setShowPayModal(false);
-    setShowSuccess(true);
+
+try {
+  await onTransaction(txn);
+
+  setLastTxn(txn);
+  setCart([]);
+  setDiscount(0);
+  setCashInput("");
+  setShowPayModal(false);
+  setShowSuccess(true);
+} catch (err) {
+  alert("Gagal menyimpan transaksi: " + err.message);
+}
   };
 
   if (showSuccess && lastTxn) {
