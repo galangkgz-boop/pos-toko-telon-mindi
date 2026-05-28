@@ -951,6 +951,57 @@ const styles = `
   background: #b91c1c;
 }
 
+.success-receipt-wrap {
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.success-receipt-wrap .card {
+  padding: 18px !important;
+}
+
+.success-receipt-wrap .receipt-preview,
+.success-receipt-wrap pre {
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 12px !important;
+}
+
+.success-receipt-wrap h2,
+.success-receipt-wrap h3 {
+  margin: 8px 0 !important;
+  font-size: 22px !important;
+}
+
+.success-receipt-wrap .btn {
+  min-height: 44px;
+}
+
+@media (max-height: 760px) and (min-width: 769px) {
+  .success-receipt-wrap {
+    max-width: 430px;
+  }
+
+  .success-receipt-wrap .card {
+    padding: 14px !important;
+  }
+
+  .success-receipt-wrap .receipt-preview,
+  .success-receipt-wrap pre {
+    max-height: 260px;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .success-receipt-wrap h2,
+  .success-receipt-wrap h3 {
+    font-size: 19px !important;
+    margin: 6px 0 !important;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -1616,7 +1667,7 @@ try {
 
   if (showSuccess && lastTxn) {
     return (
-      <div style={{ maxWidth: 480, margin: "0 auto" }}>
+      <div className="success-receipt-wrap">
         <div className="card">
           <div className="payment-success">
             <div className="success-icon"><Icon name="check" size={32} /></div>
@@ -3254,9 +3305,38 @@ const defaultSettings = {
 };
 const activeTransactions = transactions.filter(t => t.status !== "void");
 const voidTransaction = async (txn, reason) => {
-  if (!txn || !txn.id) return;
+  if (!txn || !txn.id || txn.status === "void") return;
 
   try {
+    const items = txn.items || [];
+
+    for (const item of items) {
+      const productId = Number(item.productId || item.product_id);
+      const returnQty = Number(
+        item.stockQtyTotal ||
+        item.stock_qty_total ||
+        (Number(item.qty || 0) * Number(item.stockQtyPerItem || item.stock_qty_per_item || 1))
+      );
+
+      if (!productId || !returnQty) continue;
+
+      const product = products.find(p => Number(p.id) === productId);
+      const currentStock = Number(product?.stock || 0);
+      const nextStock = currentStock + returnQty;
+
+      await sb.patch("products", productId, {
+        stock: nextStock,
+      });
+
+      setProducts(prev =>
+        prev.map(p =>
+          Number(p.id) === productId
+            ? { ...p, stock: Number(p.stock || 0) + returnQty }
+            : p
+        )
+      );
+    }
+
     const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
       method: "PATCH",
       headers: {
