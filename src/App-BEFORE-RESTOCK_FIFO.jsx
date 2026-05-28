@@ -2215,9 +2215,6 @@ function Products({ products, setProducts, transactions }) {
   const [stockAdj, setStockAdj] = useState({ type: "tambah", qty: "", cost: "", note: "" });
   const savingProductRef = useRef(false);
   const [savingProduct, setSavingProduct] = useState(false);
-  const [restockProduct, setRestockProduct] = useState(null);
-  const [restockForm, setRestockForm] = useState({ qty: "", cost: "", });
-  const [savingRestock, setSavingRestock] = useState(false);
 
   const subMenus = [
     { id: "daftar", label: "📦 Daftar Produk" },
@@ -2240,14 +2237,6 @@ function Products({ products, setProducts, transactions }) {
     setForm({ ...p });
     setShowModal(true);
   };
-
-  const openRestock = (product) => {
-  setRestockProduct(product);
-  setRestockForm({
-    qty: "",
-    cost: product.cost ? String(product.cost) : "",
-  });
-};
 
  const saveProduct = async () => {
   if (savingProductRef.current) return;
@@ -2299,68 +2288,6 @@ setProducts(prev => {
   } finally {
     savingProductRef.current = false;
     setSavingProduct(false);
-  }
-};
-
-const saveRestock = async () => {
-  if (!restockProduct || savingRestock) return;
-
-  const qtyIn = Number(restockForm.qty || 0);
-  const cost = Number(restockForm.cost || 0);
-
-  if (qtyIn <= 0) {
-    alert("Qty restock harus lebih dari 0.");
-    return;
-  }
-
-  if (cost <= 0) {
-    alert("Modal per pcs harus lebih dari 0.");
-    return;
-  }
-
-  setSavingRestock(true);
-
-  try {
-    const currentStock = Number(restockProduct.stock || 0);
-    const nextStock = currentStock + qtyIn;
-
-    const [updatedProduct] = await sb.patch("products", restockProduct.id, {
-      stock: nextStock,
-      cost,
-      stock_management: true,
-    });
-
-    await sb.post("stock_batches", [
-      {
-        product_id: restockProduct.id,
-        qty_in: qtyIn,
-        qty_remaining: qtyIn,
-        cost,
-      },
-    ]);
-
-    setProducts(prev =>
-      prev.map(p =>
-        Number(p.id) === Number(restockProduct.id)
-          ? {
-              ...p,
-              ...updatedProduct,
-              stock: nextStock,
-              cost,
-              stock_management: true,
-            }
-          : p
-      )
-    );
-
-    setRestockProduct(null);
-    setRestockForm({ qty: "", cost: "" });
-
-    alert("Restock berhasil disimpan.");
-  } catch (err) {
-    alert("Gagal restock: " + err.message);
-  } finally {
-    setSavingRestock(false);
   }
 };
 
@@ -2548,14 +2475,6 @@ const toggleStockManagement = async (id) => {
 
 <td>
   <div style={{ display: "flex", gap: 6 }}>
-
-    <button
-  type="button"
-  className="btn btn-sm btn-outline"
-  onClick={() => openRestock(p)}
->
-  Restock
-</button>
                           <button className="btn-icon" onClick={() => openEdit(p)}><Icon name="edit" size={14} /></button>
                           <button className="btn-icon" onClick={() => deleteProduct(p.id)} style={{ color: "var(--danger)" }}><Icon name="trash" size={14} /></button>
                         </div>
@@ -2779,89 +2698,6 @@ const toggleStockManagement = async (id) => {
           </div>
         </div>
       )}
-
-      {restockProduct && (
-        <div className="modal-overlay">
-        <div className="modal">
-        <div className="modal-header">
-        <div>
-          <h3>Restock Produk</h3>
-          <p>{restockProduct.name}</p>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
-          onClick={() => setRestockProduct(null)}
-        >
-          Tutup
-        </button>
-      </div>
-
-      <div className="form-row">
-        <label>Stok Sekarang</label>
-        <input
-          className="input"
-          value={Number(restockProduct.stock || 0)}
-          disabled
-        />
-      </div>
-
-      <div className="form-row">
-        <label>Qty Masuk</label>
-        <input
-          className="input"
-          type="number"
-          value={restockForm.qty}
-          onChange={e =>
-            setRestockForm(prev => ({
-              ...prev,
-              qty: e.target.value,
-            }))
-          }
-          placeholder="Contoh: 20"
-        />
-      </div>
-
-      <div className="form-row">
-        <label>Modal per pcs</label>
-        <input
-          className="input"
-          type="number"
-          value={restockForm.cost}
-          onChange={e =>
-            setRestockForm(prev => ({
-              ...prev,
-              cost: e.target.value,
-            }))
-          }
-          placeholder="Contoh: 15750"
-        />
-      </div>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <button
-          type="button"
-          className="btn btn-outline"
-          style={{ flex: 1 }}
-          onClick={() => setRestockProduct(null)}
-        >
-          Batal
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ flex: 1 }}
-          onClick={saveRestock}
-          disabled={savingRestock}
-        >
-          {savingRestock ? "Menyimpan..." : "Simpan Restock"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
       {stockModal && (
         <div className="modal-overlay">
