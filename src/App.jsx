@@ -1057,32 +1057,36 @@ const styles = `
   }
 
   .receipt-print {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 58mm !important;
-    max-width: 58mm !important;
-    padding: 4mm 3mm !important;
-    margin: 0 !important;
-    background: #fff !important;
-    color: #000 !important;
-    font-family: "Courier New", monospace !important;
-    font-size: 10px !important;
-    line-height: 1.25 !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 48mm !important;
+  max-width: 48mm !important;
+  padding: 2mm 2mm !important;
+  margin: 0 !important;
+  background: #fff !important;
+  color: #000 !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
 
-  .receipt-print .receipt-title {
-    font-size: 12px !important;
-    font-weight: 900 !important;
-    text-align: center !important;
-  }
+  .receipt-print * {
+  color: #000 !important;
+  font-weight: 700 !important;
+}
 
-  .receipt-print .receipt-divider {
-    border-top: 1px dashed #000 !important;
-    margin: 6px 0 !important;
-  }
+.receipt-print strong {
+  font-weight: 900 !important;
+}
+
+.receipt-print .receipt-divider {
+  border-top: 1px dashed #000 !important;
+  margin: 4px 0 !important;
+}
 
   .receipt-print button,
   .receipt-print .btn {
@@ -1090,7 +1094,7 @@ const styles = `
   }
 
   @page {
-    size: 58mm 180mm;
+    size: 58mm 210mm;
     margin: 0;
   }
 }
