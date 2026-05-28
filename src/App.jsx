@@ -431,6 +431,22 @@ const styles = `
   display: none;
 }
 
+.cashier-filter-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.cashier-filter-area .input-group {
+  width: 100%;
+}
+
+.cashier-filter-area .category-chips {
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .cart-panel {
     display: none;
@@ -1002,33 +1018,83 @@ const styles = `
   }
 }
 
+@media (min-width: 1200px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .app {
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .main {
+    flex: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
   }
 
-  #receipt-print,
-  #receipt-print * {
+  .receipt-print,
+  .receipt-print * {
     visibility: visible !important;
   }
 
-  #receipt-print {
+  .receipt-print {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 58mm !important;
-    padding: 0 !important;
+    max-width: 58mm !important;
+    padding: 4mm 3mm !important;
     margin: 0 !important;
-    background: white !important;
-    color: black !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: "Courier New", monospace !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
     box-shadow: none !important;
+    border: none !important;
+  }
+
+  .receipt-print .receipt-title {
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+  }
+
+  .receipt-print .receipt-divider {
+    border-top: 1px dashed #000 !important;
+    margin: 6px 0 !important;
+  }
+
+  .receipt-print button,
+  .receipt-print .btn {
+    display: none !important;
   }
 
   @page {
-    size: 58mm auto;
+    size: 58mm 180mm;
     margin: 0;
   }
 }
+
 /* RESPONSIVE MOBILE */
 @media (max-width: 768px) {
   .app {
@@ -1313,10 +1379,6 @@ function Dashboard({ transactions, products }) {
   return (
     <div>
       <div className="page-header">
-        <div>
-          <div className="page-title">Dashboard</div>
-          <div className="page-subtitle">{today.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
-        </div>
       </div>
 
       <div className="stats-grid">
@@ -1674,7 +1736,7 @@ try {
             <div style={{ fontFamily: "Sora", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</div>
             <div style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>#{lastTxn.id.toString().padStart(6, "0")} · {lastTxn.payMethod}</div>
           </div>
-         <div id="receipt-print" className="receipt">
+         <div id="receipt-print" className="receipt receipt-print">
             <div style={{ textAlign: "center", marginBottom: 8 }}>
              <strong>{settings?.store_name || "Agen Frozenfood"}</strong><br />
 {settings?.store_address && (
@@ -1742,8 +1804,8 @@ try {
     <div className="cashier-layout">
       {/* PRODUCTS */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div className="input-group" style={{ flex: 1 }}>
+        <div className="cashier-filter-area">
+          <div className="input-group" style={{ width: "100%" }}>
             <span className="input-icon"><Icon name="search" size={15} /></span>
             <input className="input" placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
@@ -2474,10 +2536,6 @@ const toggleStockManagement = async (id) => {
   return (
     <div>
       <div className="page-header">
-        <div>
-          <div className="page-title">Produk</div>
-          <div className="page-subtitle">{products.length} produk terdaftar</div>
-        </div>
       </div>
       <div className="submenu-tabs">
         {subMenus.map(s => (
@@ -2760,10 +2818,6 @@ const itemsSold = activeFiltered.reduce(
   return (
     <div>
       <div className="page-header">
-        <div>
-          <div className="page-title">Riwayat Penjualan</div>
-          <div className="page-subtitle">{filtered.length} transaksi ditemukan</div>
-        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
@@ -3001,7 +3055,6 @@ function Reports({ transactions }) {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Laporan</div>
       </div>
       <div className="submenu-tabs">
         {tabs.map(t => <div key={t.id} className={`submenu-tab ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>{t.label}</div>)}
@@ -3217,7 +3270,7 @@ function Settings({ appSettings, setAppSettings }) {
 
   return (
     <div>
-      <div className="page-header"><div className="page-title">Pengaturan</div></div>
+      <div className="page-header"></div>
       {saved && <div className="alert alert-success"><Icon name="check" size={16} /> Pengaturan berhasil disimpan!</div>}
 
       <div className="grid-2" style={{ gap: 20 }}>
