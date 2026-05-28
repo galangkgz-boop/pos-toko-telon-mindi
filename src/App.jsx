@@ -941,6 +941,16 @@ const styles = `
   border-color: var(--primary);
 }
 
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -2539,7 +2549,7 @@ const toggleStockManagement = async (id) => {
 }
 
 // ─── HISTORY (RIWAYAT PENJUALAN) ──────────────────────────────────────────────
-function History({ transactions, settings}) {
+function History({ transactions, settings, onVoidTransaction }) {
   const [period, setPeriod] = useState("hari");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [detail, setDetail] = useState(null);
@@ -2685,9 +2695,14 @@ function History({ transactions, settings}) {
   });
 }, [transactions, period, selectedDate]);
 
-  const omzet = filtered.reduce((s, t) => s + t.total, 0);
-  const profit = filtered.reduce((s, t) => s + t.profit, 0);
-  const itemsSold = filtered.reduce((s, t) => s + t.items.reduce((a, i) => a + i.qty, 0), 0);
+  const activeFiltered = filtered.filter(t => t.status !== "void");
+
+const omzet = activeFiltered.reduce((s, t) => s + Number(t.total || 0), 0);
+const profit = activeFiltered.reduce((s, t) => s + Number(t.profit || 0), 0);
+const itemsSold = activeFiltered.reduce(
+  (s, t) => s + (t.items || []).reduce((a, i) => a + Number(i.qty || 0), 0),
+  0
+);
 
   const periods = [{ id: "hari", label: "Harian" }, { id: "minggu", label: "Mingguan" }, { id: "bulan", label: "Bulanan" }, { id: "tahun", label: "Tahunan" }];
 
@@ -2808,7 +2823,19 @@ function History({ transactions, settings}) {
                   <td style={{ fontWeight: 700, color: "var(--primary)" }}>{fmt(t.total)}</td>
                   <td style={{ fontWeight: 700, color: t.profit > 0 ? "var(--success)" : "var(--danger)" }}>{fmt(t.profit)}</td>
                   <td><span className={`badge ${t.payMethod === "Tunai" ? "badge-green" : t.payMethod === "QRIS" ? "badge-blue" : "badge-orange"}`}>{t.payMethod}</span></td>
-                  <td><button className="btn btn-sm btn-outline" onClick={() => setDetail(t)}>Lihat</button></td>
+                  <td>
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    {t.status === "void" && (
+      <span className="badge badge-red">
+        BATAL
+      </span>
+    )}
+
+    <button className="btn btn-sm btn-outline" onClick={() => setDetail(t)}>
+      Lihat
+    </button>
+  </div>
+</td>
                 </tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 30 }}>Tidak ada transaksi pada periode ini</td></tr>}
@@ -2843,12 +2870,38 @@ function History({ transactions, settings}) {
             <button
   type="button"
   className="btn btn-primary"
-  style={{ width: "100%", marginTop: 10 }}
+  style={{ width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
   onClick={() => printHistoryReceipt(detail)}
 >
   <Icon name="printer" /> Cetak Ulang Struk
 </button>
-            <button className="btn btn-outline" style={{ width: "100%", marginTop: 16 }} onClick={() => setDetail(null)}>Tutup</button>
+
+{detail?.status !== "void" && (
+  <button
+    type="button"
+    className="btn btn-danger"
+    style={{ width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
+    onClick={async () => {
+  const reason = prompt("Alasan membatalkan transaksi?");
+  if (reason === null) return;
+
+  const ok = confirm("Yakin batalkan transaksi ini?");
+  if (!ok) return;
+
+  if (!onVoidTransaction) {
+    alert("Fungsi batalkan transaksi belum terhubung.");
+    return;
+  }
+
+  await onVoidTransaction(detail, reason || "Dibatalkan");
+  setDetail(null);
+}}
+  >
+    Batalkan Transaksi
+  </button>
+)}
+
+            <button className="btn btn-outline" style={{ width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setDetail(null)}>Tutup</button>
           </div>
         </div>
       )}
@@ -3199,7 +3252,46 @@ const defaultSettings = {
   store_phone: "085888100995",
   receipt_footer: "Terima kasih sudah berbelanja",
 };
+const activeTransactions = transactions.filter(t => t.status !== "void");
+const voidTransaction = async (txn, reason) => {
+  if (!txn || !txn.id) return;
 
+  try {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
+      method: "PATCH",
+      headers: {
+        ...HEADERS,
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status: "void",
+        voided_at: new Date().toISOString(),
+        void_reason: reason || "Dibatalkan",
+      }),
+    });
+
+    if (!r.ok) {
+      throw new Error(await r.text());
+    }
+
+    setTransactions(prev =>
+      prev.map(t =>
+        Number(t.id) === Number(txn.id)
+          ? {
+              ...t,
+              status: "void",
+              voided_at: new Date().toISOString(),
+              void_reason: reason || "Dibatalkan",
+            }
+          : t
+      )
+    );
+
+    alert("Transaksi berhasil dibatalkan.");
+  } catch (err) {
+    alert("Gagal membatalkan transaksi: " + err.message);
+  }
+};
 const [settings, setSettings] = useState(defaultSettings);
 
 const rowsToSettings = (rows) => {
@@ -3299,6 +3391,46 @@ setSettings(rowsToSettings(settingRows));
   // ── Handle new transaction → save to Supabase
   const handleTransaction = useCallback(async (txn) => {
   showSync("saving");
+
+  const voidTransaction = async (txn, reason) => {
+  if (!txn || !txn.id) return;
+
+  try {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
+      method: "PATCH",
+      headers: {
+        ...HEADERS,
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status: "void",
+        voided_at: new Date().toISOString(),
+        void_reason: reason || "Dibatalkan",
+      }),
+    });
+
+    if (!r.ok) {
+      throw new Error(await r.text());
+    }
+
+    setTransactions(prev =>
+      prev.map(t =>
+        Number(t.id) === Number(txn.id)
+          ? {
+              ...t,
+              status: "void",
+              voided_at: new Date().toISOString(),
+              void_reason: reason || "Dibatalkan",
+            }
+          : t
+      )
+    );
+
+    alert("Transaksi berhasil dibatalkan.");
+  } catch (err) {
+    alert("Gagal membatalkan transaksi: " + err.message);
+  }
+};
 
   let savedTxn = null;
 
@@ -3623,7 +3755,7 @@ setSettings(rowsToSettings(settingRows));
             </div>
           </div>
           <div className="content">
-            {page === "dashboard" && <Dashboard transactions={transactions} products={products} />}
+            {page === "dashboard" && <Dashboard transactions={activeTransactions} products={products} />}
             {page === "cashier" && (
   <Cashier
     products={products}
@@ -3632,9 +3764,13 @@ setSettings(rowsToSettings(settingRows));
     variants={variants}
   />
 )}
-            {page === "products" && <Products products={products} setProducts={setProductsWithSync} transactions={transactions} />}
-            {page === "history" && <History transactions={transactions} settings={settings} />}
-            {page === "reports" && <Reports transactions={transactions} />}
+            {page === "products" && <Products products={products} setProducts={setProductsWithSync} transactions={activeTransactions} />}
+            {page === "history" && <History
+  transactions={transactions}
+  settings={settings}
+  onVoidTransaction={voidTransaction}
+/>}
+            {page === "reports" && <Reports transactions={activeTransactions} />}
             {page === "settings" && (
   <Settings appSettings={settings} setAppSettings={setSettings} />
 )}
