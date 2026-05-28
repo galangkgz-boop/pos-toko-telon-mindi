@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import * as qz from "qz-tray";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://xosrquegrqkejbidxaan.supabase.co";
@@ -73,6 +74,72 @@ const Icon = ({ name, size = 20 }) => {
 const fmt = (n) => "Rp " + n.toLocaleString("id-ID");
 const fmtDate = (iso) => new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+const buildThermalReceipt = (txn, settings) => {
+  const line = "--------------------------------\n";
+  const storeName = settings?.storeName || settings?.store_name || "Toko Telon Mindi";
+  const address = settings?.address || settings?.store_address || "";
+  const phone = settings?.phone || settings?.store_phone || "";
+  const note = settings?.receiptNote || settings?.receipt_footer || "Terima kasih sudah berbelanja!";
+
+  const items = (txn.items || []).map(item => {
+    const name = String(item.name || "").slice(0, 28);
+    const qty = Number(item.qty || 0);
+    const price = Number(item.price || 0);
+    const subtotal = Number(item.subtotal || qty * price);
+
+    return (
+      name + "\n" +
+      qty + " x " + fmt(price) + "\n" +
+      "                 " + fmt(subtotal) + "\n"
+    );
+  }).join("");
+
+  const paid = Number(txn.paid || txn.cashReceived || txn.payment || 0);
+  const change = Number(txn.change || 0);
+
+  return [
+  "\x1B\x40",
+  "\x1B\x61\x01",
+  "AGEN SOSIS & ES KRISTAL\n",
+  "TOKO TELON MINDI\n",
+  address ? address + "\n" : "",
+  phone ? "WA: " + phone + "\n" : "",
+    "\x1B\x61\x00",
+    line,
+    "TRX-" + String(txn.id).slice(-4).padStart(4, "0") + "\n",
+    "Tanggal: " + fmtDate(txn.date) + " " + fmtTime(txn.date) + "\n",
+    "Metode: " + (txn.payMethod || "-") + "\n",
+    line,
+    items,
+    line,
+    "TOTAL      " + fmt(txn.total) + "\n",
+    txn.payMethod === "Tunai" ? "Bayar      " + fmt(paid) + "\n" : "",
+    txn.payMethod === "Tunai" ? "Kembali    " + fmt(change) + "\n" : "",
+    line,
+    "\x1B\x61\x01",
+    note + "\n",
+    "\n\n\n",
+    "\x1D\x56\x00",
+  ];
+};
+
+const printThermalQZ = async (txn, settings) => {
+  try {
+    if (!qz.websocket.isActive()) {
+      await qz.websocket.connect();
+    }
+
+    const printerName = "EPPOS";
+
+    const config = qz.configs.create(printerName);
+    const data = buildThermalReceipt(txn, settings);
+
+    await qz.print(config, data);
+  } catch (err) {
+    alert("Gagal cetak thermal: " + (err?.message || err));
+  }
+};
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const styles = `
@@ -1060,20 +1127,29 @@ const styles = `
   position: absolute !important;
   left: 0 !important;
   top: 0 !important;
-  width: 48mm !important;
-  max-width: 48mm !important;
-  padding: 2mm 2mm !important;
+  width: 54mm !important;
+  max-width: 54mm !important;
+  padding: 3mm 2mm !important;
   margin: 0 !important;
   background: #fff !important;
   color: #000 !important;
   font-family: "Courier New", monospace !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
-  line-height: 1.15 !important;
+  line-height: 1.25 !important;
   box-shadow: none !important;
   border: none !important;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
 }
 
+.receipt-print,
+.receipt-print * {
+  overflow: visible !important;
+  max-height: none !important;
+}
+  
   .receipt-print * {
   color: #000 !important;
   font-weight: 700 !important;
@@ -1738,23 +1814,34 @@ try {
           <div className="payment-success">
             <div className="success-icon"><Icon name="check" size={32} /></div>
             <div style={{ fontFamily: "Sora", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</div>
-            <div style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>#{lastTxn.id.toString().padStart(6, "0")} · {lastTxn.payMethod}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>TRX-{String(lastTxn.id).slice(-4).padStart(4, "0")} · {lastTxn.payMethod}</div>
           </div>
          <div id="receipt-print" className="receipt receipt-print">
-            <div style={{ textAlign: "center", marginBottom: 8 }}>
-             <strong>{settings?.store_name || "Agen Frozenfood"}</strong><br />
-{settings?.store_address && (
-  <>
-    <span style={{ fontSize: 11 }}>{settings.store_address}</span><br />
-  </>
-)}
-{settings?.store_phone && (
-  <>
-    <span style={{ fontSize: 11 }}>WA: {settings.store_phone}</span><br />
-  </>
-)}
-<span style={{ fontSize: 11 }}>{fmtDate(lastTxn.date)} {fmtTime(lastTxn.date)}</span>
-            </div>
+            <div style={{ textAlign: "center", marginBottom: 8, lineHeight: 1.35 }}>
+  <div style={{ fontWeight: 800, fontSize: 13 }}>
+    AGEN SOSIS & ES KRISTAL
+  </div>
+  <div style={{ fontWeight: 800, fontSize: 13 }}>
+    TOKO TELON MINDI
+  </div>
+
+  {settings?.store_address && (
+    <>
+      <span style={{ fontSize: 11 }}>{settings.store_address}</span><br />
+    </>
+  )}
+
+  {settings?.store_phone && (
+    <>
+      <span style={{ fontSize: 11 }}>WA: {settings.store_phone}</span><br />
+    </>
+  )}
+
+  <span style={{ fontSize: 11 }}>
+    {fmtDate(lastTxn.date)} {fmtTime(lastTxn.date)}
+  </span>
+</div>
+
             <hr className="receipt-divider" />
             {lastTxn.items.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1782,19 +1869,19 @@ try {
             <hr className="receipt-divider" />
             <div style={{ textAlign: "center", fontSize: 11 }}>{settings?.receipt_footer || "Terima kasih sudah berbelanja"} kasih sudah berbelanja! 🌿</div>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+
   <button
-    className="btn btn-outline"
-    style={{ flex: 1 }}
-    onClick={() => window.print()}
+    type="button"
+    className="btn btn-primary"
+    onClick={() => printThermalQZ(lastTxn, settings)}
   >
     <Icon name="printer" /> Cetak Struk
   </button>
 
   <button
     className="btn btn-primary"
-    style={{ flex: 1 }}
-    onClick={() => setShowSuccess(false)}
+    onClick={() => {setShowSuccess(false); setLastTxn(null); }}
   >
     <Icon name="plus" /> Transaksi Baru
   </button>
@@ -2976,11 +3063,18 @@ const itemsSold = activeFiltered.reduce(
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-muted)" }}><span>Modal</span><span>{fmt(detail.cost)}</span></div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--success)", fontWeight: 700 }}><span>Profit</span><span>{fmt(detail.profit)}</span></div>
             </div>
-            <button
+
+<button
   type="button"
   className="btn btn-primary"
-  style={{ width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
-  onClick={() => printHistoryReceipt(detail)}
+  style={{
+    width: "100%",
+    marginTop: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  }}
+  onClick={() => printThermalQZ(detail, settings)}
 >
   <Icon name="printer" /> Cetak Ulang Struk
 </button>
