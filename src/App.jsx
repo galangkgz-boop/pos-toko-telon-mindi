@@ -1001,11 +1001,13 @@ const styles = `
   }
 }
 .payment-suggestions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr));
   gap: 8px;
-  margin-top: 10px;
 }
+
+.payment.suggestion .payment-chip {
+width: 100%; justify-content: center; white-space: nowrap;}
 
 .payment-chip {
   border: 1px solid var(--border);
@@ -1136,6 +1138,382 @@ const styles = `
   .dashboard-two-columns {
     grid-template-columns: 1fr;
   }
+}
+
+.wallet-card {
+  margin-bottom: 20px;
+  padding: 16px !important;
+}
+
+.wallet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.wallet-balance {
+  text-align: right;
+}
+
+.wallet-balance span,
+.wallet-summary span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.wallet-balance strong {
+  display: block;
+  font-size: 24px;
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.wallet-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.wallet-summary div {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.wallet-summary strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.wallet-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.wallet-actions .input {
+  width: 150px;
+}
+
+@media (max-width: 768px) {
+  .wallet-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wallet-balance {
+    text-align: left;
+  }
+
+  .wallet-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wallet-actions .input,
+  .wallet-actions button {
+    width: 100%;
+  }
+}
+
+.wallet-card .section-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.wallet-balance small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.wallet-action-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.btn-danger-soft {
+  border-color: rgba(220, 38, 38, 0.25) !important;
+  color: #b91c1c !important;
+  background: rgba(220, 38, 38, 0.04) !important;
+}
+
+.btn-danger-soft:hover {
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+  .top-product-compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top-product-compact-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 78px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.top-product-compact-row:last-child {
+  border-bottom: none;
+}
+
+.top-product-compact-main {
+  min-width: 0;
+}
+
+.top-product-compact-name {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-product-compact-qty {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rank-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dashboard-small-subtitle {
+  font-size: 12px !important;
+  line-height: 1.3;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.payment-suggestions-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.payment-suggestions-center {
+  display: flex;
+  justify-content: center;
+}
+
+.payment-suggestions-center .payment-chip {
+  min-width: auto;
+  justify-content: center;
+  background: rgba(15, 118, 110, 0.10) !important;
+  border: 1px solid rgba(15, 118, 110, 0.22) !important;
+  color: var(--primary) !important;
+  font-weight: 900;
+}
+
+.payment-suggestions .payment-chip {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.payment-methods,
+.pay-methods {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap;
+}
+
+.payment-suggestions-center .payment-chip.active {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+.payment-suggestions {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100%;
+}
+
+.payment-suggestions .payment-chip {
+  width: auto !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  white-space: nowrap;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.payment-info-box {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(15, 118, 110, 0.06);
+  border: 1px solid rgba(15, 118, 110, 0.10);
+  text-align: center;
+}
+
+.payment-info-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.payment-info-subtitle {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  max-width: 360px;
+  margin: 0 auto 12px;
+}
+
+.bank-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.bank-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: left;
+}
+
+.bank-logo {
+  width: 56px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.bank-detail {
+  min-width: 0;
+}
+
+.bank-number {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+
+.bank-owner {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.payment-total-note {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.18);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.payment-total-note strong {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.payment-info-box {
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.payment-info-title {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.payment-info-subtitle {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.bank-list {
+  gap: 8px;
+}
+
+.bank-card {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bank-card-active {
+  border-color: rgba(15, 118, 110, 0.45) !important;
+  background: rgba(15, 118, 110, 0.10) !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.08);
+}
+
+.bank-card-active .bank-logo {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+.bank-logo {
+  width: 48px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.bank-number {
+  font-size: 15px;
+}
+
+.bank-owner {
+  font-size: 11px;
+}
+
+.payment-total-note {
+  margin-top: 10px;
+  padding-top: 9px;
 }
 
 @media print {
@@ -1448,7 +1826,16 @@ const styles = `
 `;
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function Dashboard({ transactions, products }) {
+function Dashboard({
+  transactions,
+  products,
+  cashSession,
+  cashMovements,
+  openingCashInput,
+  setOpeningCashInput,
+  saveOpeningCash,
+  addCashMovement,
+}) {
   const today = new Date();
   const todayStr = today.toDateString();
 
@@ -1456,6 +1843,21 @@ function Dashboard({ transactions, products }) {
   const totalOmzetToday = todayTxns.reduce((s, t) => s + t.total, 0);
   const totalProfitToday = todayTxns.reduce((s, t) => s + t.profit, 0);
   const totalItemsToday = todayTxns.reduce((s, t) => s + t.items.reduce((a, i) => a + i.qty, 0), 0);
+
+  const cashInManual = cashMovements
+  .filter(m => m.type === "in")
+  .reduce((s, m) => s + Number(m.amount || 0), 0);
+
+const cashOutManual = cashMovements
+  .filter(m => m.type === "out")
+  .reduce((s, m) => s + Number(m.amount || 0), 0);
+
+const cashSalesToday = todayTxns
+  .filter(t => t.payMethod === "Tunai")
+  .reduce((s, t) => s + Number(t.total || 0), 0);
+
+const openingCash = Number(cashSession?.opening_cash || 0);
+const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
 
   const todaySoldMap = {};
 
@@ -1527,50 +1929,110 @@ function Dashboard({ transactions, products }) {
         </div>
       </div>
 
+      <div className="card wallet-card">
+  <div className="wallet-head">
+    <div>
+      <div className="section-title">💰 Dompet / Kas Toko</div>
+      <div className="section-subtitle">Ringkasan kas hari ini</div>
+    </div>
+
+    <div className="wallet-balance">
+  <span>Saldo Kas</span>
+  <strong>{fmt(cashBalanceToday)}</strong>
+  <small>Kas awal + tunai + masuk - keluar</small>
+</div>
+  </div>
+
+  <div className="wallet-summary">
+    <div>
+      <span>Kas Awal</span>
+      <strong>{fmt(openingCash)}</strong>
+    </div>
+
+    <div>
+      <span>Penjualan Tunai</span>
+      <strong>{fmt(cashSalesToday)}</strong>
+    </div>
+
+    <div>
+      <span>Pemasukan</span>
+      <strong>{fmt(cashInManual)}</strong>
+    </div>
+
+    <div>
+      <span>Pengeluaran</span>
+      <strong>{fmt(cashOutManual)}</strong>
+    </div>
+  </div>
+
+  <div className="wallet-actions">
+    <div className="wallet-actions-label">Ubah Kas Awal:</div>
+    <input
+      className="input"
+      type="number"
+      value={openingCashInput}
+      onChange={e => setOpeningCashInput(e.target.value)}
+      placeholder="Kas awal"
+    />
+
+    <button
+      type="button"
+      className="btn btn-primary"
+      onClick={saveOpeningCash}
+    >
+      Simpan
+    </button>
+
+    <button
+      type="button"
+      className="btn btn-outline"
+      onClick={() => addCashMovement("in")}
+    >
+      + Pemasukan
+    </button>
+
+    <button
+      type="button"
+      className="btn btn-outline btn-danger-soft"
+      onClick={() => addCashMovement("out")}
+    >
+      - Pengeluaran
+    </button>
+  </div>
+</div>
+
         <div className="dashboard-two-columns">        
         <div className="dashboard-two-columns">  
         <div className="card">
   <div className="section-header">
     <div>
       <div className="section-title">🏆 Produk Terlaris Hari Ini</div>
-      <div className="section-subtitle">Berdasarkan jumlah item terjual hari ini</div>
+      <div className="section-subtitle dashboard-small-subtitle">Berdasarkan jumlah item terjual hari ini</div>
     </div>
   </div>
 
   {topProductsToday.length === 0 ? (
     <div className="empty-state">Belum ada produk terjual hari ini.</div>
   ) : (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="top-product-compact-list">
       {topProductsToday.map(([name, qty], i) => (
-        <div key={name} className="list-row">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="rank-badge">{i + 1}</div>
-            <div>
-              <div style={{ fontWeight: 800 }}>{name}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {qty} item terjual
-              </div>
+        <div key={name} className="top-product-compact-row">
+          <div className="rank-badge">{i + 1}</div>
+
+          <div className="top-product-compact-main">
+            <div className="top-product-compact-name">{name}</div>
+
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: Math.max(8, (qty / maxSoldToday) * 100) + "%" }}
+              />
             </div>
           </div>
 
-          <div
-  style={{
-    width: 120,
-    height: 8,
-    background: "rgba(15, 118, 110, 0.12)",
-    borderRadius: 999,
-    overflow: "hidden",
-  }}
->
-  <div
-    style={{
-      height: "100%",
-      width: Math.max(8, (qty / maxSoldToday) * 100) + "%",
-      background: "var(--primary)",
-      borderRadius: 999,
-    }}
-  />
-</div>
+          <div className="top-product-compact-qty">
+            {qty} terjual
+          </div>
         </div>
       ))}
     </div>
@@ -1623,7 +2085,7 @@ function Dashboard({ transactions, products }) {
             <div style={{ fontSize: 13, color: "var(--text-muted)", padding: "10px 0" }}>Semua stok aman ✅</div>
           ) : lowStock.map(p => (
             <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{p.image} {p.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}> {p.name}</div>
               <span className={`badge ${p.stock <= 5 ? "badge-red" : "badge-orange"}`}>{p.stock} {p.unit}</span>
             </div>
           ))}
@@ -1663,6 +2125,20 @@ function Cashier({ products, onTransaction, settings, variants }) {
   const [lastTxn, setLastTxn] = useState(null);
   const [discount, setDiscount] = useState(0);
   const [catFilter, setCatFilter] = useState("Semua");
+  const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+
+  const bankAccounts = [
+  {
+    bank: "BRI",
+    number: "618101000014566",
+    name: "GALANG YOGA ADHITAMA",
+  },
+  {
+    bank: "DANA",
+    number: "085888100995",
+    name: "GALANG YOGA ADHITAMA",
+  },
+];
 
   const activeProducts = products
   .filter(p => p.active)
@@ -1860,21 +2336,25 @@ const paymentSuggestions = getPaymentSuggestions(total);
       id: Date.now(),
       date: new Date().toISOString(),
       items: cart.map(c => ({
-  productId: Number(c.productId || c.id),
-  variantId: c.variantId || null,
-  name: c.name,
-  qty: Number(c.qty || 0),
-  stockQtyPerItem: Number(c.stockQtyPerItem || 1),
-  stockQtyTotal: Number(c.qty || 0) * Number(c.stockQtyPerItem || 1),
-  price: Number(c.price || 0),
-  cost: Number(c.cost || 0),
-  discount: Number(c.discount || 0),
-  subtotal: Math.round(Number(c.price || 0) * Number(c.qty || 0) * (1 - Number(c.discount || 0) / 100))
+        productId: Number(c.productId || c.id),
+        variantId: c.variantId || null,
+        name: c.name,
+        qty: Number(c.qty || 0),
+        stockQtyPerItem: Number(c.stockQtyPerItem || 1),
+        stockQtyTotal: Number(c.qty || 0) * Number(c.stockQtyPerItem || 1),
+        price: Number(c.price || 0),
+        cost: Number(c.cost || 0),
+        discount: Number(c.discount || 0),
+        subtotal: Math.round(Number(c.price || 0) * Number(c.qty || 0) * (1 - Number(c.discount || 0) / 100))
 })),
       total,
-  cost: cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
-  profit: total - cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
-  payMethod,
+      cost: cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+      profit: total - cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+      payMethod,
+      paymentDetail:
+        payMethod === "Transfer" && selectedBankAccount ? selectedBankAccount.bank + " - " + selectedBankAccount.number
+      : payMethod === "QRIS" ? "QRIS"
+      : "Tunai",
   paid: cash,
   cashReceived: cash,
   payment: cash,
@@ -1895,6 +2375,11 @@ try {
   alert("Gagal menyimpan transaksi: " + err.message);
 }
   };
+
+  if (payMethod === "Transfer" && !selectedBankAccount) {
+  alert("Pilih rekening tujuan transfer dulu.");
+  return;
+}
 
   if (showSuccess && lastTxn) {
     return (
@@ -2227,9 +2712,19 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
             </div>
             <div className="form-row">
               <label>Metode Pembayaran</label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                 {["Tunai", "QRIS", "Transfer"].map(m => (
-                  <button key={m} className={`btn ${payMethod === m ? "btn-primary" : "btn-outline"}`} onClick={() => setPayMethod(m)}>{m}</button>
+                  <button key={m} className={`btn ${payMethod === m ? "btn-primary" : "btn-outline"}`} onClick={() => {
+  setPayMethod(m);
+
+  if (m !== "Transfer") {
+    setSelectedBankAccount(null);
+  }
+
+  if (m === "Transfer" && !selectedBankAccount && bankAccounts.length > 0) {
+    setSelectedBankAccount(bankAccounts[0]);
+  }
+}}>{m}</button>
                 ))}
               </div>
             </div>
@@ -2249,21 +2744,39 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
   }}
   placeholder="Masukkan uang diterima"
 />
-<div className="payment-suggestions">
-  {paymentSuggestions.map(amount => (
+<div className="payment-suggestions-wrap">
+  <div className="payment-suggestions-center">
     <button
-      key={amount}
       type="button"
       className={
-        Number(cashInput || 0) === amount
+        Number(cashInput || 0) === total
           ? "payment-chip active"
           : "payment-chip"
       }
-      onClick={() => setCashInput(String(amount))}
+      onClick={() => setCashInput(String(total))}
     >
-      {amount === total ? "Pas" : fmt(amount)}
+      Uang Pas
     </button>
-  ))}
+  </div>
+
+  <div className="payment-suggestions">
+    {paymentSuggestions
+      .filter(amount => amount !== total)
+      .map(amount => (
+        <button
+          key={amount}
+          type="button"
+          className={
+            Number(cashInput || 0) === amount
+              ? "payment-chip active"
+              : "payment-chip"
+          }
+          onClick={() => setCashInput(String(amount))}
+        >
+          {fmt(amount)}
+        </button>
+      ))}
+  </div>
 </div>
                 </div>
                 {cash > 0 && (
@@ -2275,7 +2788,60 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
                 )}
               </>
             )}
-            <div style={{ display: "flex", gap: 10 }}>
+
+{payMethod === "QRIS" && (
+  <div className="payment-info-box">
+    <div className="payment-info-title">Scan QRIS</div>
+    <div className="payment-info-subtitle">
+      Minta pelanggan scan QRIS ini, lalu klik Bayar setelah pembayaran masuk.
+    </div>
+
+    <div className="qris-box">
+      <img src="/qris.png" alt="QRIS Toko" />
+    </div>
+
+    <div className="payment-total-note">
+      Total Tagihan: <strong>{fmt(total)}</strong>
+    </div>
+  </div>
+)}
+
+{payMethod === "Transfer" && (
+  <div className="payment-info-box">
+    <div className="payment-info-title">Transfer Bank</div>
+    <div className="payment-info-subtitle">
+      Pilih salah satu rekening tujuan.
+    </div>
+
+    <div className="bank-list">
+        {bankAccounts.map(acc => (
+  <button
+    type="button"
+    key={acc.bank + acc.number}
+    className={
+      selectedBankAccount?.number === acc.number
+        ? "bank-card bank-card-active"
+        : "bank-card"
+    }
+    onClick={() => setSelectedBankAccount(acc)}
+  >
+          <div className="bank-logo">{acc.bank}</div>
+
+          <div className="bank-detail">
+            <div className="bank-number">{acc.number}</div>
+            <div className="bank-owner">a.n. {acc.name}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+
+    <div className="payment-total-note">
+      Total Tagihan: <strong>{fmt(total)}</strong>
+    </div>
+  </div>
+)}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPayModal(false)}>Batal</button>
               <button
                 className="btn btn-primary" style={{ flex: 1 }}
@@ -2848,8 +3414,10 @@ const toggleStockManagement = async (id) => {
               <label>Emoji Ikon</label>
               <input className="input" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="Emoji produk..." />
             </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Batal</button>
+
               <button
   type="button"
   className="btn btn-primary"
@@ -3699,6 +4267,9 @@ export default function App() {
   const [dbError, setDbError] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null); // 'saving' | 'saved' | 'error'
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cashSession, setCashSession] = useState(null);
+  const [cashMovements, setCashMovements] = useState([]);
+  const [openingCashInput, setOpeningCashInput] = useState("");
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -3861,6 +4432,8 @@ setVariants(
 
     setTransactions(txnsWithItems);
 
+    await loadCashToday();
+
 const settingRows = await sb.get("settings", "?select=key,value");
 setSettings(rowsToSettings(settingRows));
   } catch (err) {
@@ -3868,6 +4441,110 @@ setSettings(rowsToSettings(settingRows));
     setDbError(err.message || "Gagal terhubung ke database");
   } finally {
     setLoading(false);
+  }
+};
+
+const loadCashToday = async () => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const sessions = await sb.get(
+      "cash_sessions",
+      "?select=*&date=eq." + today + "&order=id.desc&limit=1"
+    );
+
+    const session = sessions?.[0] || null;
+    setCashSession(session);
+
+    if (session?.id) {
+      const movements = await sb.get(
+        "cash_movements",
+        "?select=*&session_id=eq." + session.id + "&order=created_at.desc"
+      );
+
+      setCashMovements(movements || []);
+    } else {
+      setCashMovements([]);
+    }
+  } catch (err) {
+    console.error("Gagal load dompet:", err);
+  }
+};
+
+const saveOpeningCash = async () => {
+  const amount = Number(openingCashInput || 0);
+
+  if (amount < 0) {
+    alert("Kas awal tidak boleh minus.");
+    return;
+  }
+
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (cashSession?.id) {
+      const [updated] = await sb.patch("cash_sessions", cashSession.id, {
+        opening_cash: amount,
+        updated_at: new Date().toISOString(),
+      });
+
+      setCashSession(updated || { ...cashSession, opening_cash: amount });
+    } else {
+      const [created] = await sb.post("cash_sessions", [
+        {
+          date: today,
+          opening_cash: amount,
+          status: "open",
+        },
+      ]);
+
+      setCashSession(created);
+    }
+
+    setOpeningCashInput("");
+    await loadCashToday();
+
+    alert("Kas awal berhasil disimpan.");
+  } catch (err) {
+    alert("Gagal menyimpan kas awal: " + err.message);
+  }
+};
+
+const addCashMovement = async (type) => {
+  try {
+    if (!cashSession?.id) {
+      alert("Isi dan simpan Kas Awal dulu sebelum mencatat pemasukan/pengeluaran.");
+      return;
+    }
+
+    const label = type === "in" ? "pemasukan" : "pengeluaran";
+    const amountText = prompt("Nominal " + label + ":");
+
+    if (amountText === null) return;
+
+    const amount = Number(amountText || 0);
+
+    if (amount <= 0) {
+      alert("Nominal harus lebih dari 0.");
+      return;
+    }
+
+    const description = prompt("Keterangan " + label + ":") || "";
+
+    await sb.post("cash_movements", [
+      {
+        session_id: cashSession.id,
+        type,
+        amount,
+        description,
+      },
+    ]);
+
+    await loadCashToday();
+
+    alert("Berhasil menyimpan " + label + ".");
+  } catch (err) {
+    alert("Gagal menyimpan kas: " + err.message);
   }
 };
 
@@ -4015,7 +4692,8 @@ setSettings(rowsToSettings(settingRows));
       total: txn.total,
       cost: totalCost,
       profit: finalProfit,
-      pay_method: txn.payMethod,
+      pay_method: txn.payMethod, 
+      payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
     }]);
 
     // 3. Simpan detail item transaksi
@@ -4059,10 +4737,14 @@ setSettings(rowsToSettings(settingRows));
 
     // 7. Update tampilan lokal
     const fullTxn = {
-      ...savedTxn,
+      ...(savedTxn || {}),
+      id: savedTxn?.id || txn.id,
+      date: savedTxn?.date || txn.date,
+      total: Number(savedTxn?.total || txn.total || 0),
       cost: totalCost,
       profit: finalProfit,
-      payMethod: savedTxn.pay_method,
+      payMethod: savedTxn?.pay_method || txn.payMethod,
+      payment_detail: savedTxn?.payment_detail || txn.payment_detail || txn.paymentDetail || txn.payMethod,
       items: processedItems,
     };
 
@@ -4238,7 +4920,18 @@ setSettings(rowsToSettings(settingRows));
             </div>
           </div>
           <div className="content">
-            {page === "dashboard" && <Dashboard transactions={activeTransactions} products={products} />}
+            {page === "dashboard" && (
+  <Dashboard
+    transactions={activeTransactions}
+    products={products}
+    cashSession={cashSession}
+    cashMovements={cashMovements}
+    openingCashInput={openingCashInput}
+    setOpeningCashInput={setOpeningCashInput}
+    saveOpeningCash={saveOpeningCash}
+    addCashMovement={addCashMovement}
+  />
+)}
             {page === "cashier" && (
   <Cashier
     products={products}
