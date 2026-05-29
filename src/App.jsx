@@ -1174,7 +1174,7 @@ width: 100%; justify-content: center; white-space: nowrap;}
 
 .wallet-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -1514,6 +1514,63 @@ width: 100%; justify-content: center; white-space: nowrap;}
 .payment-total-note {
   margin-top: 10px;
   padding-top: 9px;
+}
+
+.wallet-transfer-detail {
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.wallet-transfer-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.wallet-transfer-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.wallet-transfer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: white;
+}
+
+.wallet-transfer-item span {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wallet-transfer-item strong {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.wallet-transfer-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: white;
 }
 
 @media print {
@@ -1856,6 +1913,26 @@ const cashSalesToday = todayTxns
   .filter(t => t.payMethod === "Tunai")
   .reduce((s, t) => s + Number(t.total || 0), 0);
 
+const qrisSalesToday = todayTxns
+  .filter(t => t.payMethod === "QRIS")
+  .reduce((s, t) => s + Number(t.total || 0), 0);
+
+const transferSalesToday = todayTxns
+  .filter(t => t.payMethod === "Transfer")
+  .reduce((s, t) => s + Number(t.total || 0), 0);
+
+const transferByDetail = {};
+
+todayTxns
+  .filter(t => t.payMethod === "Transfer")
+  .forEach(t => {
+    const detail = t.paymentDetail || t.payment_detail || "Transfer";
+    transferByDetail[detail] =
+      (transferByDetail[detail] || 0) + Number(t.total || 0);
+  });
+
+const transferDetailsToday = Object.entries(transferByDetail);
+
 const openingCash = Number(cashSession?.opening_cash || 0);
 const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
 
@@ -1945,25 +2022,54 @@ const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutMa
 
   <div className="wallet-summary">
     <div>
-      <span>Kas Awal</span>
-      <strong>{fmt(openingCash)}</strong>
-    </div>
+  <span>Kas Awal</span>
+  <strong>{fmt(openingCash)}</strong>
+</div>
 
-    <div>
-      <span>Penjualan Tunai</span>
-      <strong>{fmt(cashSalesToday)}</strong>
-    </div>
+<div>
+  <span>Saldo Tunai</span>
+  <strong>{fmt(cashBalanceToday)}</strong>
+</div>
 
-    <div>
-      <span>Pemasukan</span>
-      <strong>{fmt(cashInManual)}</strong>
-    </div>
+<div>
+  <span>QRIS</span>
+  <strong>{fmt(qrisSalesToday)}</strong>
+</div>
 
-    <div>
-      <span>Pengeluaran</span>
-      <strong>{fmt(cashOutManual)}</strong>
-    </div>
+<div>
+  <span>Transfer</span>
+  <strong>{fmt(transferSalesToday)}</strong>
+</div>
+
+<div>
+  <span>Pemasukan</span>
+  <strong>{fmt(cashInManual)}</strong>
+</div>
+
+<div>
+  <span>Pengeluaran</span>
+  <strong>{fmt(cashOutManual)}</strong>
+</div>
   </div>
+
+  <div className="wallet-transfer-detail">
+  <div className="wallet-transfer-title">Rincian Transfer</div>
+
+  {transferDetailsToday.length === 0 ? (
+    <div className="wallet-transfer-empty">
+      Belum ada transfer hari ini.
+    </div>
+  ) : (
+    <div className="wallet-transfer-list">
+      {transferDetailsToday.map(([detail, amount]) => (
+        <div className="wallet-transfer-item" key={detail}>
+          <span>{detail}</span>
+          <strong>{fmt(amount)}</strong>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
   <div className="wallet-actions">
     <div className="wallet-actions-label">Ubah Kas Awal:</div>
