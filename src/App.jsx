@@ -3062,6 +3062,7 @@ const paymentSuggestions = getPaymentSuggestions(total);
         payMethod === "Transfer" && selectedBankAccount ? selectedBankAccount.bank + " - " + selectedBankAccount.number
       : payMethod === "QRIS" ? "QRIS"
       : "Tunai",
+  cashSessionId: cashSession?.id || null,
   paid: cash,
   cashReceived: cash,
   payment: cash,
@@ -5448,8 +5449,7 @@ const addCashMovement = async (type) => {
     }
 
     const finalProfit = Number(txn.total || 0) - totalCost;
-
-    // 2. Simpan transaksi utama
+    
     [savedTxn] = await sb.post("transactions", [{
       date: txn.date,
       total: txn.total,
@@ -5457,6 +5457,7 @@ const addCashMovement = async (type) => {
       profit: finalProfit,
       pay_method: txn.payMethod, 
       payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
+      cash_session_id: txn.cashSessionId || txn.cash_session_id || cashSession?.id || null,
     }]);
 
     // 3. Simpan detail item transaksi
