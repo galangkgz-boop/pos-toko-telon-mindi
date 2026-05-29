@@ -1719,6 +1719,72 @@ width: 100%; justify-content: center; white-space: nowrap;}
   font-weight: 900;
 }
 
+.cash-flow-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.16);
+}
+
+.cash-flow-title {
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.cash-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.cash-flow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cash-flow-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cash-flow-time {
+  min-width: 42px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.cash-flow-name {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.cash-flow-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.cash-flow-empty {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -2090,6 +2156,25 @@ const transferDetailsToday = Object.entries(transferByDetail);
 
 const openingCash = Number(cashSession?.opening_cash || 0);
 const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
+const cashFlowRows = [
+  ...todayTxns.map(t => ({
+    id: "trx-" + t.id,
+    time: t.date,
+    title: t.payMethod === "Tunai" ? "Penjualan Tunai" : "Penjualan " + t.payMethod,
+    subtitle: t.paymentDetail || t.payment_detail || t.payMethod || "-",
+    amount: Number(t.total || 0),
+    type: "in",
+  })),
+
+  ...cashMovements.map(m => ({
+    id: "cash-" + m.id,
+    time: m.created_at,
+    title: m.type === "in" ? "Pemasukan Manual" : "Pengeluaran",
+    subtitle: m.description || "-",
+    amount: Number(m.amount || 0),
+    type: m.type,
+  })),
+].sort((a, b) => new Date(b.time) - new Date(a.time));
 const isCashClosed = cashSession?.status === "closed";
 const displayCashBalance = isCashClosed ? 0 : cashBalanceToday; 
 const closedCashAmount = Number(cashSession?.closing_cash || 0); 
@@ -2429,6 +2514,40 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   {isCashClosed
     ? "Kas hari ini sudah ditutup. Data ini menjadi arsip penutupan kas."
     : "Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup."}
+</div>
+
+<div className="cash-flow-section">
+  <div className="cash-flow-title">Arus Kas Hari Ini</div>
+
+  {cashFlowRows.length === 0 ? (
+    <div className="cash-flow-empty">
+      Belum ada arus kas hari ini.
+    </div>
+  ) : (
+    <div className="cash-flow-list">
+      {cashFlowRows.map(row => (
+        <div className="cash-flow-item" key={row.id}>
+          <div className="cash-flow-left">
+            <div className="cash-flow-time">
+              {new Date(row.time).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+
+            <div>
+              <div className="cash-flow-name">{row.title}</div>
+              <div className="cash-flow-sub">{row.subtitle}</div>
+            </div>
+          </div>
+
+          <strong className={row.type === "out" ? "cash-out" : "cash-in"}>
+            {row.type === "out" ? "-" : "+"} {fmt(row.amount)}
+          </strong>
+        </div>
+      ))}
+    </div>
+  )}
 </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
