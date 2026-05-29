@@ -2126,29 +2126,14 @@ const sessionEnd = cashSession?.status === "closed" && cashSession?.updated_at
   ? new Date(cashSession.updated_at)
   : null;
 
-const currentSessionTxns = todayTxns.filter(t => {
-  const txDate = new Date(t.date || t.created_at);
+const currentSessionTxns = cashSession?.id
+  ? todayTxns.filter(t => Number(t.cashSessionId || t.cash_session_id) === Number(cashSession.id))
+  : [];
 
-  if (Number.isNaN(txDate.getTime())) return false;
+const currentSessionMovements = cashSession?.id
+  ? cashMovements.filter(m => Number(m.session_id) === Number(cashSession.id))
+  : [];
 
-  if (sessionEnd) {
-    return txDate >= sessionStart && txDate <= sessionEnd;
-  }
-
-  return txDate >= sessionStart;
-});
-
-const currentSessionMovements = cashMovements.filter(m => {
-  const moveDate = new Date(m.created_at);
-
-  if (Number.isNaN(moveDate.getTime())) return false;
-
-  if (sessionEnd) {
-    return moveDate >= sessionStart && moveDate <= sessionEnd;
-  }
-
-  return moveDate >= sessionStart;
-});
   const totalOmzetToday = todayTxns.reduce((s, t) => s + t.total, 0);
   const totalProfitToday = todayTxns.reduce((s, t) => s + t.profit, 0);
   const totalItemsToday = todayTxns.reduce((s, t) => s + t.items.reduce((a, i) => a + i.qty, 0), 0);
@@ -5129,6 +5114,8 @@ setVariants(
       cost: Number(t.cost || 0),
       profit: Number(t.profit || 0),
       payMethod: t.pay_method || t.payMethod || "-",
+      paymentDetails: t.payment_details || t.paymentDetails || "",
+      cashSessionId: t.cash_session_id || t.cashSessionId || null,
       items: items
         .filter(i => Number(i.transaction_id) === Number(t.id))
         .map(i => ({
@@ -5499,18 +5486,18 @@ const addCashMovement = async (type) => {
       });
     }
 
-    // 7. Update tampilan lokal
     const fullTxn = {
-      ...(savedTxn || {}),
-      id: savedTxn?.id || txn.id,
-      date: savedTxn?.date || txn.date,
-      total: Number(savedTxn?.total || txn.total || 0),
-      cost: totalCost,
-      profit: finalProfit,
-      payMethod: savedTxn?.pay_method || txn.payMethod,
-      payment_detail: savedTxn?.payment_detail || txn.payment_detail || txn.paymentDetail || txn.payMethod,
-      items: processedItems,
-    };
+  ...(savedTxn || {}),
+  id: savedTxn?.id || txn.id,
+  date: savedTxn?.date || txn.date,
+  total: Number(savedTxn?.total || txn.total || 0),
+  cost: totalCost,
+  profit: finalProfit,
+  payMethod: savedTxn?.pay_method || txn.payMethod,
+  paymentDetail: savedTxn?.payment_detail || txn.payment_detail || txn.paymentDetail || txn.payMethod,
+  cashSessionId: savedTxn?.cash_session_id || txn.cashSessionId || txn.cash_session_id || null,
+  items: processedItems,
+};
 
     setTransactions(prev => [fullTxn, ...prev]);
 
