@@ -2175,7 +2175,7 @@ const cashFlowRows = [
     type: m.type,
   })),
 ].sort((a, b) => new Date(b.time) - new Date(a.time));
-const isCashClosed = cashSession?.status === "closed";
+const isCashClosed = String(cashSession?.status || "").toLowerCase() === "closed";
 const displayCashBalance = isCashClosed ? 0 : cashBalanceToday; 
 const closedCashAmount = Number(cashSession?.closing_cash || 0); 
 const closedCashDifference = isCashClosed ? closedCashAmount - cashBalanceToday : 0;
@@ -2777,7 +2777,7 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 }
 
 // ─── CASHIER ─────────────────────────────────────────────────────────────────
-function Cashier({ products, onTransaction, settings, variants }) {
+function Cashier({ products, onTransaction, settings, variants, cashSession, }) {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -2789,6 +2789,8 @@ function Cashier({ products, onTransaction, settings, variants }) {
   const [discount, setDiscount] = useState(0);
   const [catFilter, setCatFilter] = useState("Semua");
   const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+
+  const isCashClosed = String(cashSession?.status || "").toLowerCase() === "closed";
 
   const bankAccounts = [
   {
@@ -2994,7 +2996,17 @@ const paymentSuggestions = getPaymentSuggestions(total);
   const cash = Number(cashInput) || 0;
   const change = cash - total;
 
-  const handlePay = async() => {
+  const handlePay = async () => {
+  if (isCashClosed) {
+    alert("Kas hari ini sudah ditutup. Transaksi baru tidak bisa disimpan.");
+    return;
+  }
+
+  if (payMethod === "Tunai" && (cash < total || !cashInput)) {
+    alert("Uang diterima belum cukup.");
+    return;
+  }
+
     const txn = {
       id: Date.now(),
       date: new Date().toISOString(),
@@ -3507,12 +3519,13 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
             <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPayModal(false)}>Batal</button>
               <button
-                className="btn btn-primary" style={{ flex: 1 }}
-                disabled={payMethod === "Tunai" && (cash < total || !cashInput)}
-                onClick={handlePay}
-              >
-                <Icon name="check" /> Bayar
-              </button>
+  type="button"
+  className="btn btn-primary"
+  style={{ flex: 1 }}
+  onClick={handlePay}
+>
+  <Icon name="check" /> Bayar
+</button>
             </div>
           </div>
         </div>
@@ -5657,6 +5670,7 @@ const addCashMovement = async (type) => {
     onTransaction={handleTransaction}
     settings={settings}
     variants={variants}
+    cashSession={cashSession}
   />
 )}
             {page === "products" && <Products products={products} setProducts={setProductsWithSync} transactions={activeTransactions} />}
