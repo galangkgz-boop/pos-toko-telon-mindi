@@ -1805,6 +1805,53 @@ width: 100%; justify-content: center; white-space: nowrap;}
   padding: 20px;
 }
 
+.mini-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mini-alert-card {
+  width: min(380px, 100%);
+  background: white;
+  border-radius: 22px;
+  padding: 22px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mini-alert-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.mini-alert-card h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.mini-alert-card p {
+  margin: 10px 0 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -2854,6 +2901,7 @@ function Cashier({ products, onTransaction, settings, variants, cashSession, }) 
   const [discount, setDiscount] = useState(0);
   const [catFilter, setCatFilter] = useState("Semua");
   const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+  const [showClosedAlert, setShowClosedAlert] = useState(false);
 
   const isCashClosed = String(cashSession?.status || "").toLowerCase() === "closed";
 
@@ -3063,7 +3111,7 @@ const paymentSuggestions = getPaymentSuggestions(total);
 
   const handlePay = async () => {
   if (isCashClosed) {
-    alert("Kas hari ini sudah ditutup. Transaksi baru tidak bisa disimpan.");
+    setShowClosedAlert(true);
     return;
   }
 
@@ -3596,6 +3644,29 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
           </div>
         </div>
       )}
+
+      {showClosedAlert && (
+  <div className="mini-alert-backdrop">
+    <div className="mini-alert-card">
+      <div className="mini-alert-icon">🔒</div>
+
+      <h3>Kas Sudah Ditutup</h3>
+
+      <p>
+        Transaksi baru tidak bisa disimpan karena sesi kas hari ini sudah ditutup.
+        Buka kas baru untuk memulai shift berikutnya.
+      </p>
+
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => setShowClosedAlert(false)}
+      >
+        Mengerti
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
