@@ -222,8 +222,8 @@ const styles = `
   .card-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
 
   /* STAT CARDS */
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 10px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
   .stat-card.green::before { background: var(--primary); }
   .stat-card.orange::before { background: var(--accent); }
@@ -1852,6 +1852,184 @@ width: 100%; justify-content: center; white-space: nowrap;}
   font-weight: 600;
 }
 
+.modal-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.18);
+  color: #b91c1c;
+  transform: scale(1.04);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.modal-header-center {
+  position: relative;
+  display: block;
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 0 52px;
+}
+
+.modal-title-center {
+  width: 100%;
+  text-align: center;
+}
+
+.modal-title-center h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.modal-title-center p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-close-absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.modal-title-center h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.modal-title-center p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.modal-close-absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+@media (max-width: 1100px) {
+  .page-header {
+    flex-wrap: wrap;
+  }
+
+  .header-mini-stats {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .header-mini-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.topbar-mini-stats {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin: 0 18px;
+  min-width: 0;
+}
+
+.topbar-mini-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  white-space: nowrap;
+}
+
+.stat-soft-green {
+  background: rgba(16, 185, 129, 0.10);
+}
+
+.stat-soft-orange {
+  background: rgba(249, 115, 22, 0.10);
+}
+
+.stat-soft-red {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.topbar-mini-stat span {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.topbar-mini-stat strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.topbar-mini-stat small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1100px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .topbar-mini-stats {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin: 8px 0 0;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar-mini-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -2028,12 +2206,55 @@ width: 100%; justify-content: center; white-space: nowrap;}
   }
 
   .page-header {
-    margin-bottom: 14px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-  .page-title {
-    font-size: 20px;
-  }
+.page-title {
+  font-size: 22px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.header-mini-stats {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.header-mini-stat {
+  padding: 9px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.header-mini-stat span {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.header-mini-stat strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.header-mini-stat small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
 
   .page-subtitle {
     font-size: 12px;
@@ -2042,7 +2263,7 @@ width: 100%; justify-content: center; white-space: nowrap;}
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .stat-card {
@@ -2180,6 +2401,7 @@ function Dashboard({
   closingCashInput,
   setClosingCashInput,
   saveCloseCash,
+  loadAll,
 }) {
   const today = new Date();
   const todayStr = today.toDateString();
@@ -2306,35 +2528,6 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
   return (
     <div>
-      <div className="page-header">
-      </div>
-
-      <div className="stats-grid">
-        <div className="stat-card green">
-          <div className="stat-icon"><Icon name="trending" /></div>
-          <div className="stat-label">Omzet Hari Ini</div>
-          <div className="stat-value">{fmt(totalOmzetToday)}</div>
-          <div className="stat-sub">{todayTxns.length} transaksi</div>
-        </div>
-        <div className="stat-card blue">
-          <div className="stat-icon"><Icon name="cart" /></div>
-          <div className="stat-label">Transaksi</div>
-          <div className="stat-value">{todayTxns.length}</div>
-          <div className="stat-sub">hari ini</div>
-        </div>
-        <div className="stat-card orange">
-          <div className="stat-icon"><Icon name="bar" /></div>
-          <div className="stat-label">Produk Terjual</div>
-          <div className="stat-value">{totalItemsToday}</div>
-          <div className="stat-sub">item hari ini</div>
-        </div>
-        <div className="stat-card red">
-          <div className="stat-icon"><Icon name="tag" /></div>
-          <div className="stat-label">Profit Bersih</div>
-          <div className="stat-value">{fmt(totalProfitToday)}</div>
-          <div className="stat-sub">hari ini</div>
-        </div>
-      </div>
 
       <div className="card wallet-card">
   <div className="wallet-head">
@@ -2392,20 +2585,52 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 {showCashHistory && (
   <div className="modal-backdrop">
     <div className="modal-card">
-      <div className="modal-header">
-        <div>
-          <h3>Riwayat Kas</h3>
-          <p>Pemasukan dan pengeluaran manual hari ini</p>
-        </div>
+      <div
+  style={{
+    position: "relative",
+    textAlign: "center",
+    padding: "0 52px",
+    marginBottom: 16,
+  }}
+>
+  <button
+    type="button"
+    className="modal-close-btn"
+    onClick={() => setShowCashHistory(false)}
+    aria-label="Tutup"
+    style={{
+      position: "absolute",
+      top: 0,
+      right: 0,
+      zIndex: 10,
+    }}
+  >
+    ×
+  </button>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
-          onClick={() => setShowCashHistory(false)}
-        >
-          Tutup
-        </button>
-      </div>
+  <h3
+    style={{
+      margin: 0,
+      fontSize: 22,
+      fontWeight: 900,
+      textAlign: "center",
+    }}
+  >
+    Riwayat Kas
+  </h3>
+
+  <p
+    style={{
+      margin: "6px 0 0",
+      color: "var(--text-muted)",
+      fontSize: 14,
+      fontWeight: 700,
+      textAlign: "center",
+    }}
+  >
+    Catatan pemasukan dan pengeluaran kas shift ini
+  </p>
+</div>
 
       {cashMovements.length === 0 ? (
         <div className="empty-state">
@@ -2444,20 +2669,51 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   {showCashDetail && (
   <div className="modal-backdrop">
     <div className="modal-card">
-      <div className="modal-header">
-        <div>
-          <h3>Detail Dompet</h3>
-          <p>Ringkasan kas dan pembayaran hari ini</p>
-        </div>
+      <div
+  style={{
+    position: "relative",
+    textAlign: "center",
+    padding: "0 52px",
+    marginBottom: 16,
+  }}
+>
+  <button
+    type="button"
+    className="modal-close-btn"
+    onClick={() => setShowCashDetail(false)}
+    aria-label="Tutup"
+    style={{
+      position: "absolute",
+      top: 0,
+      right: 0,
+    }}
+  >
+    ×
+  </button>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
-          onClick={() => setShowCashDetail(false)}
-        >
-          Tutup
-        </button>
-      </div>
+  <h3
+    style={{
+      margin: 0,
+      fontSize: 22,
+      fontWeight: 900,
+      textAlign: "center",
+    }}
+  >
+    Detail Dompet
+  </h3>
+
+  <p
+    style={{
+      margin: "6px 0 0",
+      color: "var(--text-muted)",
+      fontSize: 14,
+      fontWeight: 700,
+      textAlign: "center",
+    }}
+  >
+    Ringkasan kas dan pembayaran hari ini
+  </p>
+</div>
 
       <div className="cash-detail-grid">
         <div>
@@ -2504,27 +2760,56 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   </div>
 )}
 
-{showCloseCash && (
+  {showCloseCash && (
   <div className="modal-backdrop">
     <div className="modal-card">
-      <div className="modal-header">
-        <div>
-          <h3>{isCashClosed ? "Detail Tutup Kas" : "Tutup Kas"}</h3>
-          <p>
-            {isCashClosed
-            ? "Rincian kas yang sudah ditutup hari ini"
-            : "Cocokkan uang fisik laci dengan saldo sistem"}
-          </p>
-        </div>
+      <div
+  style={{
+    position: "relative",
+    textAlign: "center",
+    padding: "0 52px",
+    marginBottom: 16,
+  }}
+>
+  <button
+    type="button"
+    className="modal-close-btn"
+    onClick={() => setShowCloseCash(false)}
+    aria-label="Tutup"
+    style={{
+      position: "absolute",
+      top: 0,
+      right: 0,
+    }}
+  >
+    ×
+  </button>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
-          onClick={() => setShowCloseCash(false)}
-        >
-          Tutup
-        </button>
-      </div>
+  <h3
+    style={{
+      margin: 0,
+      fontSize: 22,
+      fontWeight: 900,
+      textAlign: "center",
+    }}
+  >
+    {isCashClosed ? "Detail Tutup Kas" : "Tutup Kas"}
+  </h3>
+
+  <p
+    style={{
+      margin: "6px 0 0",
+      color: "var(--text-muted)",
+      fontSize: 14,
+      fontWeight: 700,
+      textAlign: "center",
+    }}
+  >
+    {isCashClosed
+      ? "Rincian kas yang sudah ditutup hari ini"
+      : "Cocokkan uang fisik laci dengan saldo sistem"}
+  </p>
+</div>
 
       <div className="cash-close-summary">
         {/* 8 kotak rincian kamu tetap di sini */}
@@ -2661,27 +2946,40 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
     {/* Arus Kas Hari Ini boleh tetap di sini */}
 
-  <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-    <button
-    type="button"
-    className="btn btn-outline"
-    style={{ flex: 1 }}
-    onClick={() => setShowCloseCash(false)}
-    >
-    {isCashClosed ? "Tutup" : "Batal"}
-  </button>
+  <div
+  style={{
+    display: "flex",
+    gap: 10,
+    marginTop: 16,
+    justifyContent: isCashClosed ? "center" : "stretch",
+  }}
+>
+  <button
+  type="button"
+  className="btn btn-outline"
+  style={{
+    flex: isCashClosed ? "0 0 180px" : 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+  }}
+  onClick={() => setShowCloseCash(false)}
+>
+  {isCashClosed ? "Tutup" : "Batal"}
+</button>
 
-    {!isCashClosed && (
-      <button
-        type="button"
-        className="btn btn-primary"
-        style={{ flex: 1 }}
-        onClick={saveCloseCash}
-        >
-        Simpan Tutup Kas
-        </button>
-      )}
-    </div>
+  {!isCashClosed && (
+    <button
+      type="button"
+      className="btn btn-primary"
+      style={{ flex: 1 }}
+      onClick={saveCloseCash}
+    >
+      Simpan Tutup Kas
+    </button>
+  )}
+</div>
     </div>
     </div>
 )}
@@ -5680,6 +5978,29 @@ const addCashMovement = async (type) => {
   const pageTitle = { dashboard: "Dashboard", cashier: "Kasir", products: "Produk", history: "Riwayat Penjualan", reports: "Laporan", settings: "Pengaturan" };
   const lowStockCount = products.filter(p => p.stock <= 10 && p.active).length;
 
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+const topbarTodayTxns = activeTransactions.filter(t =>
+  String(t.date || t.created_at || "").slice(0, 10) === todayKey
+);
+
+const topbarOmzetToday = topbarTodayTxns.reduce(
+  (sum, t) => sum + Number(t.total || 0),
+  0
+);
+
+const topbarProfitToday = topbarTodayTxns.reduce(
+  (sum, t) => sum + Number(t.profit || 0),
+  0
+);
+
+const topbarItemsToday = topbarTodayTxns.reduce(
+  (sum, t) =>
+    sum +
+    (t.items || []).reduce((itemSum, i) => itemSum + Number(i.qty || 0), 0),
+  0
+);
+
   // ── Loading screen
   if (loading) {
     return (
@@ -5782,8 +6103,32 @@ const addCashMovement = async (type) => {
 
         <main className="main">
           <div className="topbar">
-            <div className="topbar-title">{pageTitle[page]}</div>
-            <div className="topbar-right">
+  <div className="topbar-title">{pageTitle[page]}</div>
+
+  {page === "dashboard" && (
+  <div className="topbar-mini-stats">
+    <div className="topbar-mini-stat stat-soft-green">
+      <span>Omzet</span>
+      <strong>{fmt(topbarOmzetToday)}</strong>
+      <small>{topbarTodayTxns.length} trx</small>
+    </div>
+
+    <div className="topbar-mini-stat stat-soft-orange">
+      <span>Produk</span>
+      <strong>{topbarItemsToday}</strong>
+      <small>terjual</small>
+    </div>
+
+    <div className="topbar-mini-stat stat-soft-red">
+      <span>Profit</span>
+      <strong>{fmt(topbarProfitToday)}</strong>
+      <small>bersih</small>
+    </div>
+  </div>
+)}
+
+  <div className="topbar-right">
+
               <button className="btn btn-sm btn-outline" onClick={loadAll} title="Refresh data dari Supabase" style={{ fontSize: 12 }}>🔄 Refresh</button>
               <div className="topbar-time">{now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}</div>
               <div className="avatar">TM</div>
@@ -5809,6 +6154,7 @@ const addCashMovement = async (type) => {
     closingCashInput={closingCashInput}
     setClosingCashInput={setClosingCashInput}
     saveCloseCash={saveCloseCash}
+    loadAll={loadAll}
   />
 )}
             {page === "cashier" && (
