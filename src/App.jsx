@@ -2199,6 +2199,82 @@ width: 100%; justify-content: center; white-space: nowrap;}
   color: var(--text-muted);
 }
 
+.daily-report-summary {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.10), rgba(15, 23, 42, 0.03));
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.daily-summary-main {
+  margin-bottom: 14px;
+}
+
+.daily-summary-main span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.daily-summary-main strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.daily-summary-main small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.daily-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.daily-summary-grid > div {
+  padding: 11px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.daily-summary-grid span {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.daily-summary-grid strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .daily-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .daily-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -3415,6 +3491,41 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
       };
     });
 
+    const dailySummary = reportRows.reduce(
+  (acc, row) => {
+    acc.totalShift += 1;
+    acc.cashSales += Number(row.cashSales || 0);
+    acc.qrisSales += Number(row.qrisSales || 0);
+    acc.transferSales += Number(row.transferSales || 0);
+    acc.cashIn += Number(row.cashIn || 0);
+    acc.cashOut += Number(row.cashOut || 0);
+    acc.systemCash += Number(row.systemCash || 0);
+
+    if (String(row.session.status || "").toLowerCase() === "closed") {
+      acc.closingCash += Number(row.closingCash || 0);
+      acc.difference += Number(row.difference || 0);
+      acc.closedShift += 1;
+    } else {
+      acc.openShift += 1;
+    }
+
+    return acc;
+  },
+  {
+    totalShift: 0,
+    closedShift: 0,
+    openShift: 0,
+    cashSales: 0,
+    qrisSales: 0,
+    transferSales: 0,
+    cashIn: 0,
+    cashOut: 0,
+    systemCash: 0,
+    closingCash: 0,
+    difference: 0,
+  }
+);
+
   return (
     <div>
       <div className="report-header">
@@ -3422,6 +3533,56 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
     <h2>Laporan Kas per Shift</h2>
     <p>Ringkasan buka dan tutup kas berdasarkan sesi shift.</p>
   </div>
+
+  <div className="daily-report-summary">
+  <div className="daily-summary-main">
+    <span>Ringkasan Tanggal</span>
+    <strong>
+      {new Date(reportDate).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+    </strong>
+    <small>
+      {dailySummary.totalShift} shift · {dailySummary.closedShift} ditutup · {dailySummary.openShift} open
+    </small>
+  </div>
+
+  <div className="daily-summary-grid">
+    <div>
+      <span>Penjualan Tunai</span>
+      <strong>{fmt(dailySummary.cashSales)}</strong>
+    </div>
+
+    <div>
+      <span>QRIS</span>
+      <strong>{fmt(dailySummary.qrisSales)}</strong>
+    </div>
+
+    <div>
+      <span>Transfer</span>
+      <strong>{fmt(dailySummary.transferSales)}</strong>
+    </div>
+
+    <div>
+      <span>Pemasukan</span>
+      <strong>{fmt(dailySummary.cashIn)}</strong>
+    </div>
+
+    <div>
+      <span>Pengeluaran</span>
+      <strong className="cash-out">{fmt(dailySummary.cashOut)}</strong>
+    </div>
+
+    <div>
+      <span>Selisih Kas</span>
+      <strong className={dailySummary.difference < 0 ? "cash-out" : "cash-in"}>
+        {fmt(dailySummary.difference)}
+      </strong>
+    </div>
+  </div>
+</div>
 
   <div className="report-date-filter">
     <label>Tanggal</label>
@@ -3531,7 +3692,9 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
 </div>
             </div>
           ))
-          )}
+          )};
+
+          
 
 {selectedShift && (
   <div className="modal-backdrop">
