@@ -1573,6 +1573,140 @@ width: 100%; justify-content: center; white-space: nowrap;}
   background: white;
 }
 
+.cash-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cash-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cash-history-title {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.cash-history-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.cash-history-time {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cash-in {
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.cash-out {
+  color: #b91c1c;
+  white-space: nowrap;
+}
+
+.cash-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cash-detail-grid div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cash-detail-grid span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.cash-detail-grid strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.cash-detail-total {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(15, 118, 110, 0.10);
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cash-detail-total span {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 900;
+}
+
+.cash-detail-total strong {
+  font-size: 22px;
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.cash-detail-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.cash-close-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cash-close-summary div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cash-close-summary span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.cash-close-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -1892,6 +2026,15 @@ function Dashboard({
   setOpeningCashInput,
   saveOpeningCash,
   addCashMovement,
+  showCashHistory,
+  setShowCashHistory,
+  showCashDetail,
+  setShowCashDetail,
+  showCloseCash,
+  setShowCloseCash,
+  closingCashInput,
+  setClosingCashInput,
+  saveCloseCash,
 }) {
   const today = new Date();
   const todayStr = today.toDateString();
@@ -1935,6 +2078,9 @@ const transferDetailsToday = Object.entries(transferByDetail);
 
 const openingCash = Number(cashSession?.opening_cash || 0);
 const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
+
+const closingCashValue = Number(closingCashInput || 0);
+const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBalanceToday;
 
   const todaySoldMap = {};
 
@@ -2052,6 +2198,196 @@ const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutMa
 </div>
   </div>
 
+{showCashHistory && (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div className="modal-header">
+        <div>
+          <h3>Riwayat Kas</h3>
+          <p>Pemasukan dan pengeluaran manual hari ini</p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => setShowCashHistory(false)}
+        >
+          Tutup
+        </button>
+      </div>
+
+      {cashMovements.length === 0 ? (
+        <div className="empty-state">
+          Belum ada pemasukan atau pengeluaran manual hari ini.
+        </div>
+      ) : (
+        <div className="cash-history-list">
+          {cashMovements.map(m => (
+            <div className="cash-history-item" key={m.id}>
+              <div>
+                <div className="cash-history-title">
+                  {m.type === "in" ? "Pemasukan" : "Pengeluaran"}
+                </div>
+                <div className="cash-history-desc">
+                  {m.description || "-"}
+                </div>
+                <div className="cash-history-time">
+                  {new Date(m.created_at).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              </div>
+
+              <strong className={m.type === "in" ? "cash-in" : "cash-out"}>
+                {m.type === "in" ? "+" : "-"} {fmt(m.amount)}
+              </strong>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+  {showCashDetail && (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div className="modal-header">
+        <div>
+          <h3>Detail Dompet</h3>
+          <p>Ringkasan kas dan pembayaran hari ini</p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => setShowCashDetail(false)}
+        >
+          Tutup
+        </button>
+      </div>
+
+      <div className="cash-detail-grid">
+        <div>
+          <span>Kas Awal</span>
+          <strong>{fmt(openingCash)}</strong>
+        </div>
+
+        <div>
+          <span>Penjualan Tunai</span>
+          <strong>{fmt(cashSalesToday)}</strong>
+        </div>
+
+        <div>
+          <span>Pemasukan Manual</span>
+          <strong>{fmt(cashInManual)}</strong>
+        </div>
+
+        <div>
+          <span>Pengeluaran</span>
+          <strong className="cash-out">{fmt(cashOutManual)}</strong>
+        </div>
+
+        <div>
+          <span>QRIS</span>
+          <strong>{fmt(qrisSalesToday)}</strong>
+        </div>
+
+        <div>
+          <span>Transfer</span>
+          <strong>{fmt(transferSalesToday)}</strong>
+        </div>
+      </div>
+
+      <div className="cash-detail-total">
+        <span>Saldo Tunai Sistem</span>
+        <strong>{fmt(cashBalanceToday)}</strong>
+      </div>
+
+      <div className="cash-detail-note">
+        Saldo tunai sistem = kas awal + penjualan tunai + pemasukan manual - pengeluaran.
+        QRIS dan transfer tidak masuk ke saldo tunai karena uangnya masuk rekening.
+      </div>
+    </div>
+  </div>
+)}
+
+{showCloseCash && (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div className="modal-header">
+        <div>
+          <h3>Tutup Kas</h3>
+          <p>Cocokkan uang fisik laci dengan saldo sistem</p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => setShowCloseCash(false)}
+        >
+          Tutup
+        </button>
+      </div>
+
+      <div className="cash-close-summary">
+        <div>
+          <span>Saldo Sistem</span>
+          <strong>{fmt(cashBalanceToday)}</strong>
+        </div>
+
+        <div>
+          <span>Kas Fisik</span>
+          <strong>{closingCashInput === "" ? "-" : fmt(closingCashValue)}</strong>
+        </div>
+
+        <div>
+          <span>Selisih</span>
+          <strong className={cashDifference < 0 ? "cash-out" : "cash-in"}>
+            {closingCashInput === "" ? "-" : fmt(cashDifference)}
+          </strong>
+        </div>
+      </div>
+
+      <div className="form-row" style={{ marginTop: 14 }}>
+        <label>Kas Fisik di Laci</label>
+        <input
+          className="input"
+          type="number"
+          value={closingCashInput}
+          onChange={e => setClosingCashInput(e.target.value)}
+          placeholder="Contoh: 350000"
+        />
+      </div>
+
+      <div className="cash-detail-note">
+        Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup.
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ flex: 1 }}
+          onClick={() => setShowCloseCash(false)}
+        >
+          Batal
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ flex: 1 }}
+          onClick={() => setShowCloseCash(true)}
+        >
+          Simpan Tutup Kas
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
   <div className="wallet-transfer-detail">
   <div className="wallet-transfer-title">Rincian Transfer</div>
 
@@ -2104,6 +2440,31 @@ const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutMa
     >
       - Pengeluaran
     </button>
+
+    <button
+  type="button"
+  className="btn btn-outline"
+  onClick={() => setShowCashHistory(true)}
+>
+  Riwayat Kas
+</button>
+
+<button
+  type="button"
+  className="btn btn-outline"
+  onClick={() => setShowCashDetail(true)}
+>
+  Detail Dompet
+</button>
+
+<button
+  type="button"
+  className="btn btn-outline btn-danger-soft"
+  onClick={() => setShowCloseCash(true)}
+>
+  Tutup Kas
+</button>
+
   </div>
 </div>
 
@@ -2196,6 +2557,8 @@ const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutMa
             </div>
           ))}
         </div>
+
+        
 
         <div className="card">
           <div className="section-header">
@@ -4376,6 +4739,10 @@ export default function App() {
   const [cashSession, setCashSession] = useState(null);
   const [cashMovements, setCashMovements] = useState([]);
   const [openingCashInput, setOpeningCashInput] = useState("");
+  const [showCashHistory, setShowCashHistory] = useState(false);
+  const [showCashDetail, setShowCashDetail] = useState(false);
+  const [showCloseCash, setShowCloseCash] = useState(false);
+  const [closingCashInput, setClosingCashInput] = useState("");
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -4613,6 +4980,49 @@ const saveOpeningCash = async () => {
     alert("Kas awal berhasil disimpan.");
   } catch (err) {
     alert("Gagal menyimpan kas awal: " + err.message);
+  }
+};
+
+const saveCloseCash = async () => {
+  if (!cashSession?.id) {
+    alert("Kas awal belum dibuat. Simpan Kas Awal dulu.");
+    return;
+  }
+
+  if (closingCashInput === "") {
+    alert("Isi Kas Fisik dulu.");
+    return;
+  }
+
+  const amount = Number(closingCashInput || 0);
+
+  if (amount < 0) {
+    alert("Kas fisik tidak boleh minus.");
+    return;
+  }
+
+  try {
+    const [updated] = await sb.patch("cash_sessions", cashSession.id, {
+      closing_cash: amount,
+      status: "closed",
+      updated_at: new Date().toISOString(),
+    });
+
+    setCashSession(updated || {
+      ...cashSession,
+      closing_cash: amount,
+      status: "closed",
+      updated_at: new Date().toISOString(),
+    });
+
+    setClosingCashInput("");
+    setShowCloseCash(false);
+
+    await loadCashToday();
+
+    alert("Tutup kas berhasil disimpan.");
+  } catch (err) {
+    alert("Gagal menutup kas: " + err.message);
   }
 };
 
@@ -5036,6 +5446,15 @@ const addCashMovement = async (type) => {
     setOpeningCashInput={setOpeningCashInput}
     saveOpeningCash={saveOpeningCash}
     addCashMovement={addCashMovement}
+    showCashHistory={showCashHistory}
+    setShowCashHistory={setShowCashHistory}
+    showCashDetail={showCashDetail}
+    setShowCashDetail={setShowCashDetail}
+    showCloseCash={showCloseCash}
+    setShowCloseCash={setShowCloseCash}
+    closingCashInput={closingCashInput}
+    setClosingCashInput={setClosingCashInput}
+    saveCloseCash={saveCloseCash}
   />
 )}
             {page === "cashier" && (
