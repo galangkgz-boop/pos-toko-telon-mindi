@@ -2187,6 +2187,18 @@ width: 100%; justify-content: center; white-space: nowrap;}
   gap: 10px;
 }
 
+.report-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-date-filter label {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-muted);
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -3346,8 +3358,10 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 // ─── REPORTS ────────────────────────────────────────────────────────────────
 function CashShiftReport({ cashSessions, transactions, cashMovements }) {
   const [selectedShift, setSelectedShift] = useState(null);
+  const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
 
   const reportRows = [...cashSessions]
+    .filter(session => String(session.date || session.created_at || "").slice(0, 10) === reportDate)
     .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
     .map(session => {
       const sessionTxns = transactions.filter(
@@ -3404,11 +3418,21 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
   return (
     <div>
       <div className="report-header">
-        <div>
-          <h2>Laporan Kas per Shift</h2>
-          <p>Ringkasan buka dan tutup kas berdasarkan sesi shift.</p>
-        </div>
-      </div>
+  <div>
+    <h2>Laporan Kas per Shift</h2>
+    <p>Ringkasan buka dan tutup kas berdasarkan sesi shift.</p>
+  </div>
+
+  <div className="report-date-filter">
+    <label>Tanggal</label>
+    <input
+      className="input"
+      type="date"
+      value={reportDate}
+      onChange={e => setReportDate(e.target.value)}
+    />
+  </div>
+</div>
 
       <div className="shift-report-list">
         {reportRows.length === 0 ? (
