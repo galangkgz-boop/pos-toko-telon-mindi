@@ -2275,6 +2275,17 @@ width: 100%; justify-content: center; white-space: nowrap;}
   }
 }
 
+.report-payment-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.report-payment-filter .btn {
+  min-height: 36px;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -3435,14 +3446,20 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 function CashShiftReport({ cashSessions, transactions, cashMovements }) {
   const [selectedShift, setSelectedShift] = useState(null);
   const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentFilter, setPaymentFilter] = useState("Semua");
 
   const reportRows = [...cashSessions]
     .filter(session => String(session.date || session.created_at || "").slice(0, 10) === reportDate)
     .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
     .map(session => {
-      const sessionTxns = transactions.filter(
-        t => Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
-      );
+      const sessionTxnsAll = transactions.filter(
+  t => Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
+);
+
+const sessionTxns =
+  paymentFilter === "Semua"
+    ? sessionTxnsAll
+    : sessionTxnsAll.filter(t => (t.payMethod || t.pay_method) === paymentFilter);
 
       const sessionMovements = cashMovements.filter(
         m => Number(m.session_id) === Number(session.id)
@@ -3593,6 +3610,20 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
       onChange={e => setReportDate(e.target.value)}
     />
   </div>
+
+  <div className="report-payment-filter">
+  {["Semua", "Tunai", "QRIS", "Transfer"].map(method => (
+    <button
+      key={method}
+      type="button"
+      className={paymentFilter === method ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+      onClick={() => setPaymentFilter(method)}
+    >
+      {method}
+    </button>
+  ))}
+</div>
+
 </div>
 
       <div className="shift-report-list">
