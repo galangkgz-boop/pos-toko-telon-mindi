@@ -2118,33 +2118,64 @@ function Dashboard({
   const todayStr = today.toDateString();
 
   const todayTxns = transactions.filter(t => new Date(t.date).toDateString() === todayStr);
+  const sessionStart = cashSession?.created_at
+  ? new Date(cashSession.created_at)
+  : new Date(new Date().toISOString().slice(0, 10));
+
+const sessionEnd = cashSession?.status === "closed" && cashSession?.updated_at
+  ? new Date(cashSession.updated_at)
+  : null;
+
+const currentSessionTxns = todayTxns.filter(t => {
+  const txDate = new Date(t.date || t.created_at);
+
+  if (Number.isNaN(txDate.getTime())) return false;
+
+  if (sessionEnd) {
+    return txDate >= sessionStart && txDate <= sessionEnd;
+  }
+
+  return txDate >= sessionStart;
+});
+
+const currentSessionMovements = cashMovements.filter(m => {
+  const moveDate = new Date(m.created_at);
+
+  if (Number.isNaN(moveDate.getTime())) return false;
+
+  if (sessionEnd) {
+    return moveDate >= sessionStart && moveDate <= sessionEnd;
+  }
+
+  return moveDate >= sessionStart;
+});
   const totalOmzetToday = todayTxns.reduce((s, t) => s + t.total, 0);
   const totalProfitToday = todayTxns.reduce((s, t) => s + t.profit, 0);
   const totalItemsToday = todayTxns.reduce((s, t) => s + t.items.reduce((a, i) => a + i.qty, 0), 0);
 
-  const cashInManual = cashMovements
+  const cashInManual = currentSessionMovements
   .filter(m => m.type === "in")
   .reduce((s, m) => s + Number(m.amount || 0), 0);
 
-const cashOutManual = cashMovements
+const cashOutManual = currentSessionMovements
   .filter(m => m.type === "out")
   .reduce((s, m) => s + Number(m.amount || 0), 0);
 
-const cashSalesToday = todayTxns
+const cashSalesToday = currentSessionTxns
   .filter(t => t.payMethod === "Tunai")
   .reduce((s, t) => s + Number(t.total || 0), 0);
 
-const qrisSalesToday = todayTxns
+const qrisSalesToday = currentSessionTxns
   .filter(t => t.payMethod === "QRIS")
   .reduce((s, t) => s + Number(t.total || 0), 0);
 
-const transferSalesToday = todayTxns
+const transferSalesToday = currentSessionTxns
   .filter(t => t.payMethod === "Transfer")
   .reduce((s, t) => s + Number(t.total || 0), 0);
 
 const transferByDetail = {};
 
-todayTxns
+currentSessionTxns
   .filter(t => t.payMethod === "Transfer")
   .forEach(t => {
     const detail = t.paymentDetail || t.payment_detail || "Transfer";
@@ -2157,7 +2188,7 @@ const transferDetailsToday = Object.entries(transferByDetail);
 const openingCash = Number(cashSession?.opening_cash || 0);
 const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
 const cashFlowRows = [
-  ...todayTxns.map(t => ({
+  ...currentSessionTxns.map(t => ({
     id: "trx-" + t.id,
     time: t.date,
     title: t.payMethod === "Tunai" ? "Penjualan Tunai" : "Penjualan " + t.payMethod,
@@ -2166,7 +2197,7 @@ const cashFlowRows = [
     type: "in",
   })),
 
-  ...cashMovements.map(m => ({
+  ...currentSessionMovements.map(m => ({
     id: "cash-" + m.id,
     time: m.created_at,
     title: m.type === "in" ? "Pemasukan Manual" : "Pengeluaran",
@@ -2269,7 +2300,7 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   <small>
     {isCashClosed
       ? "Kas sudah ditutup"
-      : "Kas awal + tunai + masuk - keluar"}
+      : "Kas Awal + Penjualan Tunai + Pemasukan - Pengeluaran"}
   </small>
 </div>
   </div>
@@ -2595,24 +2626,25 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 </div>
 
   <div className="wallet-actions">
-    <div className="wallet-action-label" hidden={isCashClosed}>Ubah Kas Awal:</div>
+    <div className="wallet-action-label">
+  {isCashClosed ? "Kas Awal Shift Baru:" : "Ubah Kas Awal:"}
+</div>
+
     <input
   className="input"
-  type="number"
+  type="text"
+  inputMode="numeric"
   value={openingCashInput}
   onChange={e => setOpeningCashInput(e.target.value)}
-  placeholder="Kas awal"
-  hidden={isCashClosed}
+  placeholder={isCashClosed ?"Kas awal shift baru" : "Kas awal"}
 />
 
     <button
   type="button"
   className="btn btn-primary"
   onClick={saveOpeningCash}
-  hidden={isCashClosed}
-  style={{ display: isCashClosed ? "none" : undefined }}
 >
-  Simpan
+  {isCashClosed ? "Buka Kas Baru" : "Simpan"}
 </button>
 
     <button
@@ -5152,7 +5184,12 @@ const loadCashToday = async () => {
 };
 
 const saveOpeningCash = async () => {
-  const amount = Number(openingCashInput || 0);
+  const amount = Number(String(openingCashInput || "").replace(/\D/g, ""));
+
+  if (!amount) {
+    alert("Isi Kas Awal dulu.");
+    return;
+  }
 
   if (amount < 0) {
     alert("Kas awal tidak boleh minus.");
@@ -5161,14 +5198,16 @@ const saveOpeningCash = async () => {
 
   try {
     const today = new Date().toISOString().slice(0, 10);
+    const isClosed = String(cashSession?.status || "").toLowerCase() === "closed";
 
-    if (cashSession?.id) {
+    if (cashSession?.id && !isClosed) {
       const [updated] = await sb.patch("cash_sessions", cashSession.id, {
         opening_cash: amount,
+        status: "open",
         updated_at: new Date().toISOString(),
       });
 
-      setCashSession(updated || { ...cashSession, opening_cash: amount });
+      setCashSession(updated || { ...cashSession, opening_cash: amount, status: "open" });
     } else {
       const [created] = await sb.post("cash_sessions", [
         {
@@ -5179,12 +5218,13 @@ const saveOpeningCash = async () => {
       ]);
 
       setCashSession(created);
+      setCashMovements([]);
     }
 
     setOpeningCashInput("");
     await loadCashToday();
 
-    alert("Kas awal berhasil disimpan.");
+    alert(isClosed ? "Kas baru berhasil dibuka." : "Kas awal berhasil disimpan.");
   } catch (err) {
     alert("Gagal menyimpan kas awal: " + err.message);
   }
