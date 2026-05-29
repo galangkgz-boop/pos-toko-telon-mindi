@@ -2030,6 +2030,163 @@ width: 100%; justify-content: center; white-space: nowrap;}
   }
 }
 
+.report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.report-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.report-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shift-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.shift-report-card {
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.shift-report-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.shift-report-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.shift-report-sub {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shift-report-total {
+  text-align: right;
+}
+
+.shift-report-total span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.shift-report-total strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--primary-dark);
+}
+
+.shift-report-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.shift-report-grid > div {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.shift-report-grid span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text-muted);
+}
+
+.shift-report-grid strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.shift-report-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.14);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.badge-green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.badge-red {
+  background: rgba(220, 38, 38, 0.10);
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .shift-report-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shift-report-top {
+    flex-direction: column;
+  }
+
+  .shift-report-total {
+    text-align: left;
+  }
+}
+
+@media (max-width: 560px) {
+  .shift-report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shift-report-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.14);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -3181,6 +3338,306 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── REPORTS ────────────────────────────────────────────────────────────────
+function CashShiftReport({ cashSessions, transactions, cashMovements }) {
+  const [selectedShift, setSelectedShift] = useState(null);
+
+  const reportRows = [...cashSessions]
+    .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+    .map(session => {
+      const sessionTxns = transactions.filter(
+        t => Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
+      );
+
+      const sessionMovements = cashMovements.filter(
+        m => Number(m.session_id) === Number(session.id)
+      );
+
+      const openingCash = Number(session.opening_cash || 0);
+      const closingCash = Number(session.closing_cash || 0);
+
+      const cashSales = sessionTxns
+        .filter(t => t.payMethod === "Tunai" || t.pay_method === "Tunai")
+        .reduce((sum, t) => sum + Number(t.total || 0), 0);
+
+      const qrisSales = sessionTxns
+        .filter(t => t.payMethod === "QRIS" || t.pay_method === "QRIS")
+        .reduce((sum, t) => sum + Number(t.total || 0), 0);
+
+      const transferSales = sessionTxns
+        .filter(t => t.payMethod === "Transfer" || t.pay_method === "Transfer")
+        .reduce((sum, t) => sum + Number(t.total || 0), 0);
+
+      const cashIn = sessionMovements
+        .filter(m => m.type === "in")
+        .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+
+      const cashOut = sessionMovements
+        .filter(m => m.type === "out")
+        .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+
+      const systemCash = openingCash + cashSales + cashIn - cashOut;
+      const difference = String(session.status || "").toLowerCase() === "closed"
+        ? closingCash - systemCash
+        : 0;
+
+      return {
+        session,
+        openingCash,
+        closingCash,
+        cashSales,
+        qrisSales,
+        transferSales,
+        cashIn,
+        cashOut,
+        systemCash,
+        difference,
+        transactionCount: sessionTxns.length,
+      };
+    });
+
+  return (
+    <div>
+      <div className="report-header">
+        <div>
+          <h2>Laporan Kas per Shift</h2>
+          <p>Ringkasan buka dan tutup kas berdasarkan sesi shift.</p>
+        </div>
+      </div>
+
+      <div className="shift-report-list">
+        {reportRows.length === 0 ? (
+          <div className="empty-state">
+            Belum ada sesi kas.
+          </div>
+        ) : (
+          reportRows.map(row => (
+            <div className="shift-report-card" key={row.session.id}>
+              <div className="shift-report-top">
+                <div>
+                  <div className="shift-report-title">
+                    Shift #{row.session.id}
+                    <span
+  className={
+    String(row.session.status || "").toLowerCase() === "closed"
+      ? "badge badge-red"
+      : "badge badge-green"
+  }
+>
+  {String(row.session.status || "").toLowerCase() === "closed" ? "Ditutup" : "Open"}
+</span>
+                  </div>
+
+                  <div className="shift-report-sub">
+                    {new Date(row.session.created_at || row.session.date).toLocaleString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+
+                <div className="shift-report-total">
+                  <span>Saldo Sistem</span>
+                  <strong>{fmt(row.systemCash)}</strong>
+                </div>
+              </div>
+
+              <div className="shift-report-grid">
+                <div>
+                  <span>Kas Awal</span>
+                  <strong>{fmt(row.openingCash)}</strong>
+                </div>
+
+                <div>
+                  <span>Penjualan Tunai</span>
+                  <strong>{fmt(row.cashSales)}</strong>
+                </div>
+
+                <div>
+                  <span>QRIS</span>
+                  <strong>{fmt(row.qrisSales)}</strong>
+                </div>
+
+                <div>
+                  <span>Transfer</span>
+                  <strong>{fmt(row.transferSales)}</strong>
+                </div>
+
+                <div>
+                  <span>Pemasukan</span>
+                  <strong>{fmt(row.cashIn)}</strong>
+                </div>
+
+                <div>
+                  <span>Pengeluaran</span>
+                  <strong className="cash-out">{fmt(row.cashOut)}</strong>
+                </div>
+
+                <div>
+                  <span>Kas Fisik</span>
+                  <strong>{String(row.session.status).toLowerCase() === "closed" ? fmt(row.closingCash) : "-"}</strong>
+                </div>
+
+                <div>
+                  <span>Selisih</span>
+                  <strong className={row.difference < 0 ? "cash-out" : "cash-in"}>
+                    {String(row.session.status).toLowerCase() === "closed" ? fmt(row.difference) : "-"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="shift-report-footer">
+  <span>{row.transactionCount} transaksi</span>
+
+  <button
+  type="button"
+  className="btn btn-sm btn-outline"
+  onClick={() => setSelectedShift(row)}
+>
+  Lihat Detail
+</button>
+</div>
+            </div>
+          ))
+          )}
+
+{selectedShift && (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div
+        style={{
+          position: "relative",
+          textAlign: "center",
+          padding: "0 52px",
+          marginBottom: 16,
+        }}
+      >
+        <button
+          type="button"
+          className="modal-close-btn"
+          onClick={() => setSelectedShift(null)}
+          aria-label="Tutup"
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+          }}
+        >
+          ×
+        </button>
+
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            textAlign: "center",
+          }}
+        >
+          Detail Shift #{selectedShift.session.id}
+        </h3>
+
+        <p
+          style={{
+            margin: "6px 0 0",
+            color: "var(--text-muted)",
+            fontSize: 14,
+            fontWeight: 700,
+            textAlign: "center",
+          }}
+        >
+          Rincian kas dan pembayaran per sesi shift
+        </p>
+      </div>
+
+      <div className="cash-close-summary">
+        <div>
+          <span>Kas Awal</span>
+          <strong>{fmt(selectedShift.openingCash)}</strong>
+        </div>
+
+        <div>
+          <span>Penjualan Tunai</span>
+          <strong>{fmt(selectedShift.cashSales)}</strong>
+        </div>
+
+        <div>
+          <span>QRIS</span>
+          <strong>{fmt(selectedShift.qrisSales)}</strong>
+        </div>
+
+        <div>
+          <span>Transfer</span>
+          <strong>{fmt(selectedShift.transferSales)}</strong>
+        </div>
+
+        <div>
+          <span>Pemasukan</span>
+          <strong>{fmt(selectedShift.cashIn)}</strong>
+        </div>
+
+        <div>
+          <span>Pengeluaran</span>
+          <strong className="cash-out">{fmt(selectedShift.cashOut)}</strong>
+        </div>
+
+        <div>
+          <span>Kas Fisik</span>
+          <strong>
+            {String(selectedShift.session.status || "").toLowerCase() === "closed"
+              ? fmt(selectedShift.closingCash)
+              : "-"}
+          </strong>
+        </div>
+
+        <div>
+          <span>Selisih</span>
+          <strong className={selectedShift.difference < 0 ? "cash-out" : "cash-in"}>
+            {String(selectedShift.session.status || "").toLowerCase() === "closed"
+              ? fmt(selectedShift.difference)
+              : "-"}
+          </strong>
+        </div>
+      </div>
+
+      <div className="cash-detail-note">
+        {selectedShift.transactionCount} transaksi dalam shift ini.
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginTop: 16,
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{
+            width: 180,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+          onClick={() => setSelectedShift(null)}
+        >
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </div>
   );
@@ -5379,6 +5836,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState(null); // 'saving' | 'saved' | 'error'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cashSession, setCashSession] = useState(null);
+  const [cashSessions, setCashSessions] = useState([]);
   const [cashMovements, setCashMovements] = useState([]);
   const [openingCashInput, setOpeningCashInput] = useState("");
   const [showCashHistory, setShowCashHistory] = useState(false);
@@ -5490,11 +5948,10 @@ const rowsToSettings = (rows) => {
   setDbError(null);
 
   try {
-    // 1. Load products
+
     const prods = await sb.get("products", "?select=*&order=id.asc");
     setProducts(prods);
 
-    // 1.5 Load product variants
     const variantRows = await sb.get(
   "product_variants",
   "?select=*&active=eq.true&order=product_id.asc&order=qty_multiplier.asc"
@@ -5515,10 +5972,14 @@ setVariants(
       "?select=*&order=date.desc&limit=500"
     );
 
-    // 3. Load semua item transaksi (bisa dioptimasi dengan filter berdasarkan ID transaksi yang sudah di-load)
     const items = await sb.get(
       "transaction_items",
       "?select=*&order=id.asc"
+    );
+
+    const sessions = await sb.get(
+      "cash_sessions",
+      "?select=*&order=id.desc"
     );
 
     console.log("TRANSACTIONS FROM SUPABASE:", txns);
@@ -5548,6 +6009,7 @@ setVariants(
     }));
 
     setTransactions(txnsWithItems);
+    setCashSessions(sessions || []);
 
     await loadCashToday();
 
@@ -6172,7 +6634,13 @@ const topbarItemsToday = topbarTodayTxns.reduce(
   settings={settings}
   onVoidTransaction={voidTransaction}
 />}
-            {page === "reports" && <Reports transactions={activeTransactions} />}
+            {page === "reports" && (
+  <CashShiftReport
+    cashSessions={cashSessions}
+    transactions={activeTransactions}
+    cashMovements={cashMovements}
+  />
+)}
             {page === "settings" && (
   <Settings appSettings={settings} setAppSettings={setSettings} />
 )}
