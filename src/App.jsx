@@ -1785,6 +1785,26 @@ width: 100%; justify-content: center; white-space: nowrap;}
   font-weight: 700;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.modal-card {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 24px;
+  padding: 20px;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -2443,11 +2463,11 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
       <div className="modal-header">
         <div>
           <h3>{isCashClosed ? "Detail Tutup Kas" : "Tutup Kas"}</h3>
-<p>
-  {isCashClosed
-    ? "Rincian kas yang sudah ditutup hari ini"
-    : "Cocokkan uang fisik laci dengan saldo sistem"}
-</p>
+          <p>
+            {isCashClosed
+            ? "Rincian kas yang sudah ditutup hari ini"
+            : "Cocokkan uang fisik laci dengan saldo sistem"}
+          </p>
         </div>
 
         <button
@@ -2460,95 +2480,121 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
       </div>
 
       <div className="cash-close-summary">
+        {/* 8 kotak rincian kamu tetap di sini */}
+      
         <div>
-  <span>Kas Awal</span>
-  <strong>{fmt(openingCash)}</strong>
-</div>
+          <span>Kas Awal</span>
+          <strong>{fmt(openingCash)}</strong>
+        </div>
 
-<div>
-  <span>Penjualan Tunai</span>
-  <strong>{fmt(cashSalesToday)}</strong>
-</div>
+        <div>
+          <span>Penjualan Tunai</span>
+          <strong>{fmt(cashSalesToday)}</strong>
+        </div>
 
-<div>
-  <span>Pemasukan</span>
-  <strong>{fmt(cashInManual)}</strong>
-</div>
+        <div>
+          <span>Pemasukan</span>
+          <strong>{fmt(cashInManual)}</strong>
+        </div>
 
-<div>
-  <span>Pengeluaran</span>
-  <strong className="cash-out">{fmt(cashOutManual)}</strong>
-</div>
+        <div>
+          <span>Pengeluaran</span>
+          <strong className="cash-out">{fmt(cashOutManual)}</strong>
+        </div>
 
-<div>
-  <span>Saldo Sistem</span>
-  <strong>{fmt(cashBalanceToday)}</strong>
-</div>
+        <div>
+          <span>Saldo Sistem</span>
+          <strong>{fmt(cashBalanceToday)}</strong>
+        </div>
 
-<div>
-  <span>Kas Fisik</span>
-  <strong>
-    {isCashClosed
-      ? fmt(closedCashAmount)
-      : closingCashInput === ""
-        ? "-"
-        : fmt(closingCashValue)}
-  </strong>
-</div>
+        <div>
+          <span>Kas Fisik</span>
+          <strong>
+            {isCashClosed
+              ? fmt(closedCashAmount)
+              : closingCashInput === ""
+                ? "-"
+                : fmt(closingCashValue)}
+          </strong>
+        </div>
 
-<div>
-  <span>Selisih</span>
-  <strong className={(isCashClosed ? closedCashDifference : cashDifference) < 0 ? "cash-out" : "cash-in"}>
-    {isCashClosed
-      ? fmt(closedCashDifference)
-      : closingCashInput === ""
-        ? "-"
-        : fmt(cashDifference)}
-  </strong>
-</div>
-
-<div>
-  <span>Status</span>
-  <strong>{isCashClosed ? "Ditutup" : "Belum Ditutup"}</strong>
-</div>
-      </div>
-
-      {isCashClosed && (
-      <div className="form-row" style={{ marginTop: 14 }}>
-        <label>Kas Fisik di Laci</label>
-        <input
-          className="input"
-          type="number"
-          value={closingCashInput}
-          onChange={e => setClosingCashInput(e.target.value)}
-          placeholder="Contoh: 350000"
-        />
-      </div>
-        )}
-
-      <div className="cash-detail-note">
-  {isCashClosed
-    ? "Kas hari ini sudah ditutup. Data ini menjadi arsip penutupan kas."
-    : "Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup."}
-</div>
-
-<div className="cash-flow-section">
-  <div className="cash-flow-title">Arus Kas Hari Ini</div>
-
-  {cashFlowRows.length === 0 ? (
-    <div className="cash-flow-empty">
-      Belum ada arus kas hari ini.
+        <div>
+          <span>Selisih</span>
+          <strong 
+            className={
+              (isCashClosed ? closedCashDifference : cashDifference) < 0 
+              ? "cash-out" 
+              : "cash-in"
+         }
+      >
+        {isCashClosed
+          ? fmt(closedCashDifference)
+          : closingCashInput === ""
+          ? "-"
+          : fmt(cashDifference)}
+     </strong>
     </div>
-  ) : (
-    <div className="cash-flow-list">
-      {cashFlowRows.map(row => (
-        <div className="cash-flow-item" key={row.id}>
-          <div className="cash-flow-left">
-            <div className="cash-flow-time">
-              {new Date(row.time).toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+
+        <div>
+         <span>Status</span>
+         <strong>{isCashClosed ? "Ditutup" : "Belum Ditutup"}</strong>
+        </div>
+    </div>
+
+      <div
+  style={{
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 14,
+    background: "rgba(15, 23, 42, 0.04)",
+    border: "1px solid rgba(15, 23, 42, 0.08)",
+  }}
+>
+  <label
+    style={{
+      display: "block",
+      marginBottom: 8,
+      fontSize: 13,
+      fontWeight: 900,
+    }}
+  >
+    Kas Fisik di Laci
+  </label>
+
+  <input
+    className="input"
+    type="text"
+    inputMode="numeric"
+    value={closingCashInput}
+    onChange={e => setClosingCashInput(e.target.value)}
+    placeholder="Contoh: 1000"
+    style={{ width: "100%" }}
+  />
+</div>
+
+    <div className="cash-detail-note">
+     {isCashClosed
+      ? "Kas hari ini sudah ditutup. Data ini menjadi arsip penutupan kas."
+      : "Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup."}
+    </div>
+
+    <div className="cash-flow-section">
+      <div className="cash-flow-title">Arus Kas Hari Ini</div>
+
+      {cashFlowRows.length === 0 ? (
+        <div className="cash-flow-empty">
+          Belum ada arus kas hari ini.
+        </div>
+      ) : (
+        <div className="cash-flow-list">
+          {cashFlowRows.map(row => (
+            <div className="cash-flow-item" key={row.id}>
+              <div className="cash-flow-left">
+                <div className="cash-flow-time">
+                  {new Date(row.time).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
             </div>
 
             <div>
@@ -2564,31 +2610,33 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
       ))}
     </div>
   )}
-</div>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <button
-          type="button"
-          className="btn btn-outline"
-          style={{ flex: 1 }}
-          onClick={() => setShowCloseCash(false)}
-        >
-          {isCashClosed ? "Tutup" : "Batal"}
-        </button>
-
-        {!isCashClosed && (
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ flex: 1 }}
-          onClick={saveCloseCash}
-        >
-          Simpan Tutup Kas
-        </button>
-          )}
-      </div>
-    </div>
   </div>
+
+    {/* Arus Kas Hari Ini boleh tetap di sini */}
+
+  <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+    <button
+    type="button"
+    className="btn btn-outline"
+    style={{ flex: 1 }}
+    onClick={() => setShowCloseCash(false)}
+    >
+    {isCashClosed ? "Tutup" : "Batal"}
+  </button>
+
+    {!isCashClosed && (
+      <button
+        type="button"
+        className="btn btn-primary"
+        style={{ flex: 1 }}
+        onClick={saveCloseCash}
+        >
+        Simpan Tutup Kas
+        </button>
+      )}
+    </div>
+    </div>
+    </div>
 )}
 
   <div className="wallet-transfer-detail">
