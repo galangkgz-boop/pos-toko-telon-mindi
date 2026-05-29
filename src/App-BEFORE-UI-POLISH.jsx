@@ -293,7 +293,6 @@ const styles = `
   .cashier-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; height: calc(100vh - 60px - 48px); }
   .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; overflow-y: auto; padding-right: 4px; }
   .product-card-pos {
-  padding: 22px 14px 16px;
   background: #ffffff;
   border: 1px solid #dbe4ea;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
@@ -1114,30 +1113,6 @@ const styles = `
   }
 }
 
-.dashboard-two-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.dashboard-two-columns > .dashboard-two-columns {
-  display: contents;
-}
-
-.dashboard-two-columns .card {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-}
-
-@media (max-width: 768px) {
-  .dashboard-two-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media print {
   body * {
     visibility: hidden !important;
@@ -1457,20 +1432,6 @@ function Dashboard({ transactions, products }) {
   const totalProfitToday = todayTxns.reduce((s, t) => s + t.profit, 0);
   const totalItemsToday = todayTxns.reduce((s, t) => s + t.items.reduce((a, i) => a + i.qty, 0), 0);
 
-  const todaySoldMap = {};
-
-  todayTxns.forEach(t => {
-  (t.items || []).forEach(i => {
-    todaySoldMap[i.name] = (todaySoldMap[i.name] || 0) + Number(i.qty || 0);
-  });
-});
-
-  const topProductsToday = Object.entries(todaySoldMap)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5);
-
-  const maxSoldToday = topProductsToday[0]?.[1] || 1;
-
   const monthTxns = transactions.filter(t => {
     const d = new Date(t.date);
     return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
@@ -1527,77 +1488,8 @@ function Dashboard({ transactions, products }) {
         </div>
       </div>
 
-        <div className="dashboard-two-columns">        
-        <div className="dashboard-two-columns">  
+      <div className="grid-2" style={{ marginBottom: 20 }}>
         <div className="card">
-  <div className="section-header">
-    <div>
-      <div className="section-title">🏆 Produk Terlaris Hari Ini</div>
-      <div className="section-subtitle">Berdasarkan jumlah item terjual hari ini</div>
-    </div>
-  </div>
-
-  {topProductsToday.length === 0 ? (
-    <div className="empty-state">Belum ada produk terjual hari ini.</div>
-  ) : (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {topProductsToday.map(([name, qty], i) => (
-        <div key={name} className="list-row">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="rank-badge">{i + 1}</div>
-            <div>
-              <div style={{ fontWeight: 800 }}>{name}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {qty} item terjual
-              </div>
-            </div>
-          </div>
-
-          <div
-  style={{
-    width: 120,
-    height: 8,
-    background: "rgba(15, 118, 110, 0.12)",
-    borderRadius: 999,
-    overflow: "hidden",
-  }}
->
-  <div
-    style={{
-      height: "100%",
-      width: Math.max(8, (qty / maxSoldToday) * 100) + "%",
-      background: "var(--primary)",
-      borderRadius: 999,
-    }}
-  />
-</div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-        <div className="card">
-          <div className="section-header">
-            <div className="section-title">🏆 Produk Terlaris Keseluruhan</div>
-          </div>
-          {topProducts.map(([name, qty], i) => (
-            <div key={i} className="top-product-row">
-              <div className="top-rank">{i + 1}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${(qty / maxSold) * 100}%` }} />
-                </div>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--primary)" }}>{qty} terjual</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      </div>
-
-        <div className="card" style={{ marginBottom: 24 }}>
           <div className="section-header">
             <div className="section-title">Omzet 7 Hari Terakhir</div>
           </div>
@@ -1613,6 +1505,25 @@ function Dashboard({ transactions, products }) {
             Omzet bulan ini: <strong style={{ color: "var(--primary)" }}>{fmt(monthOmzet)}</strong>
           </div>
         </div>
+
+        <div className="card">
+          <div className="section-header">
+            <div className="section-title">🏆 Produk Terlaris</div>
+          </div>
+          {topProducts.map(([name, qty], i) => (
+            <div key={i} className="top-product-row">
+              <div className="top-rank">{i + 1}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${(qty / maxSold) * 100}%` }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--primary)" }}>{qty} terjual</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="grid-2">
         <div className="card">
@@ -2027,6 +1938,7 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
 }
       onClick={() => availableStock > 0 && addToCart(p)}
     >
+      <div className="emoji">{p.image}</div>
       <div className="pname">{p.name}</div>
       <div className="pprice">
         {fmt(p.discount ? Math.round(p.price * (1 - p.discount / 100)) : p.price)}
@@ -2298,7 +2210,7 @@ function Products({ products, setProducts, transactions }) {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name: "", category: "", price: "", cost: "", stock: "", unit: "pcs", image: "", discount: 0, active: true });
+  const [form, setForm] = useState({ name: "", category: "", price: "", cost: "", stock: "", unit: "pcs", image: "🛍️", discount: 0, active: true });
   const [stockModal, setStockModal] = useState(null);
   const [stockAdj, setStockAdj] = useState({ type: "tambah", qty: "", cost: "", note: "" });
   const savingProductRef = useRef(false);
@@ -2608,7 +2520,7 @@ const toggleStockManagement = async (id) => {
                   {filtered.map((p, i) => (
                     <tr key={p.id}>
                       <td style={{ color: "var(--text-muted)" }}>{i + 1}</td>
-                      <td><strong> {p.name}</strong></td>
+                      <td><strong>{p.image} {p.name}</strong></td>
                       <td>{p.category}</td>
                       <td style={{ fontWeight: 700 }}>{fmt(p.price)}</td>
                       <td style={{ color: "var(--text-muted)" }}>{fmt(p.cost)}</td>
