@@ -1681,7 +1681,7 @@ width: 100%; justify-content: center; white-space: nowrap;}
 
 .cash-close-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-top: 14px;
 }
@@ -1704,6 +1704,18 @@ width: 100%; justify-content: center; white-space: nowrap;}
   display: block;
   margin-top: 5px;
   font-size: 16px;
+  font-weight: 900;
+}
+
+.cash-closed-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -2078,6 +2090,10 @@ const transferDetailsToday = Object.entries(transferByDetail);
 
 const openingCash = Number(cashSession?.opening_cash || 0);
 const cashBalanceToday = openingCash + cashSalesToday + cashInManual - cashOutManual;
+const isCashClosed = cashSession?.status === "closed";
+const displayCashBalance = isCashClosed ? 0 : cashBalanceToday; 
+const closedCashAmount = Number(cashSession?.closing_cash || 0); 
+const closedCashDifference = isCashClosed ? closedCashAmount - cashBalanceToday : 0;
 
 const closingCashValue = Number(closingCashInput || 0);
 const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBalanceToday;
@@ -2155,26 +2171,33 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
       <div className="card wallet-card">
   <div className="wallet-head">
     <div>
-      <div className="section-title">💰 Dompet / Kas Toko</div>
-      <div className="section-subtitle">Ringkasan kas hari ini</div>
+      <div className="section-title">
+  💰 Dompet / Kas Toko
+  {isCashClosed && <span className="cash-closed-badge">Kas Ditutup</span>}
+</div>
+<div className="section-subtitle">Ringkasan kas hari ini</div>
     </div>
 
     <div className="wallet-balance">
-  <span>Saldo Kas</span>
-  <strong>{fmt(cashBalanceToday)}</strong>
-  <small>Kas awal + tunai + masuk - keluar</small>
+  <span>{isCashClosed ? "Saldo Aktif" : "Saldo Kas"}</span>
+  <strong>{fmt(displayCashBalance)}</strong>
+  <small>
+    {isCashClosed
+      ? "Kas sudah ditutup"
+      : "Kas awal + tunai + masuk - keluar"}
+  </small>
 </div>
   </div>
 
   <div className="wallet-summary">
     <div>
-  <span>Kas Awal</span>
-  <strong>{fmt(openingCash)}</strong>
+  <span>{isCashClosed ? "Saldo Aktif" : "Kas Awal"}</span>
+  <strong>{isCashClosed ? fmt(displayCashBalance) : fmt(openingCash)}</strong>
 </div>
 
 <div>
-  <span>Saldo Tunai</span>
-  <strong>{fmt(cashBalanceToday)}</strong>
+  <span>Penjualan Tunai</span>
+  <strong>{fmt(cashSalesToday)}</strong>
 </div>
 
 <div>
@@ -2302,7 +2325,7 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
       <div className="cash-detail-total">
         <span>Saldo Tunai Sistem</span>
-        <strong>{fmt(cashBalanceToday)}</strong>
+        <strong>{fmt(displayCashBalance)}</strong>
       </div>
 
       <div className="cash-detail-note">
@@ -2318,8 +2341,12 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
     <div className="modal-card">
       <div className="modal-header">
         <div>
-          <h3>Tutup Kas</h3>
-          <p>Cocokkan uang fisik laci dengan saldo sistem</p>
+          <h3>{isCashClosed ? "Detail Tutup Kas" : "Tutup Kas"}</h3>
+<p>
+  {isCashClosed
+    ? "Rincian kas yang sudah ditutup hari ini"
+    : "Cocokkan uang fisik laci dengan saldo sistem"}
+</p>
         </div>
 
         <button
@@ -2333,23 +2360,59 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
       <div className="cash-close-summary">
         <div>
-          <span>Saldo Sistem</span>
-          <strong>{fmt(cashBalanceToday)}</strong>
-        </div>
+  <span>Kas Awal</span>
+  <strong>{fmt(openingCash)}</strong>
+</div>
 
-        <div>
-          <span>Kas Fisik</span>
-          <strong>{closingCashInput === "" ? "-" : fmt(closingCashValue)}</strong>
-        </div>
+<div>
+  <span>Penjualan Tunai</span>
+  <strong>{fmt(cashSalesToday)}</strong>
+</div>
 
-        <div>
-          <span>Selisih</span>
-          <strong className={cashDifference < 0 ? "cash-out" : "cash-in"}>
-            {closingCashInput === "" ? "-" : fmt(cashDifference)}
-          </strong>
-        </div>
+<div>
+  <span>Pemasukan</span>
+  <strong>{fmt(cashInManual)}</strong>
+</div>
+
+<div>
+  <span>Pengeluaran</span>
+  <strong className="cash-out">{fmt(cashOutManual)}</strong>
+</div>
+
+<div>
+  <span>Saldo Sistem</span>
+  <strong>{fmt(cashBalanceToday)}</strong>
+</div>
+
+<div>
+  <span>Kas Fisik</span>
+  <strong>
+    {isCashClosed
+      ? fmt(closedCashAmount)
+      : closingCashInput === ""
+        ? "-"
+        : fmt(closingCashValue)}
+  </strong>
+</div>
+
+<div>
+  <span>Selisih</span>
+  <strong className={(isCashClosed ? closedCashDifference : cashDifference) < 0 ? "cash-out" : "cash-in"}>
+    {isCashClosed
+      ? fmt(closedCashDifference)
+      : closingCashInput === ""
+        ? "-"
+        : fmt(cashDifference)}
+  </strong>
+</div>
+
+<div>
+  <span>Status</span>
+  <strong>{isCashClosed ? "Ditutup" : "Belum Ditutup"}</strong>
+</div>
       </div>
 
+      {isCashClosed && (
       <div className="form-row" style={{ marginTop: 14 }}>
         <label>Kas Fisik di Laci</label>
         <input
@@ -2360,10 +2423,13 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
           placeholder="Contoh: 350000"
         />
       </div>
+        )}
 
       <div className="cash-detail-note">
-        Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup.
-      </div>
+  {isCashClosed
+    ? "Kas hari ini sudah ditutup. Data ini menjadi arsip penutupan kas."
+    : "Masukkan jumlah uang tunai fisik yang benar-benar ada di laci saat toko tutup."}
+</div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
         <button
@@ -2372,17 +2438,19 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
           style={{ flex: 1 }}
           onClick={() => setShowCloseCash(false)}
         >
-          Batal
+          {isCashClosed ? "Tutup" : "Batal"}
         </button>
 
+        {!isCashClosed && (
         <button
           type="button"
           className="btn btn-primary"
           style={{ flex: 1 }}
-          onClick={() => setShowCloseCash(true)}
+          onClick={saveCloseCash}
         >
           Simpan Tutup Kas
         </button>
+          )}
       </div>
     </div>
   </div>
@@ -2408,38 +2476,45 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 </div>
 
   <div className="wallet-actions">
-    <div className="wallet-actions-label">Ubah Kas Awal:</div>
+    <div className="wallet-action-label" hidden={isCashClosed}>Ubah Kas Awal:</div>
     <input
-      className="input"
-      type="number"
-      value={openingCashInput}
-      onChange={e => setOpeningCashInput(e.target.value)}
-      placeholder="Kas awal"
-    />
+  className="input"
+  type="number"
+  value={openingCashInput}
+  onChange={e => setOpeningCashInput(e.target.value)}
+  placeholder="Kas awal"
+  hidden={isCashClosed}
+/>
 
     <button
-      type="button"
-      className="btn btn-primary"
-      onClick={saveOpeningCash}
-    >
-      Simpan
-    </button>
+  type="button"
+  className="btn btn-primary"
+  onClick={saveOpeningCash}
+  hidden={isCashClosed}
+  style={{ display: isCashClosed ? "none" : undefined }}
+>
+  Simpan
+</button>
 
     <button
-      type="button"
-      className="btn btn-outline"
-      onClick={() => addCashMovement("in")}
-    >
-      + Pemasukan
-    </button>
+  type="button"
+  className="btn btn-outline"
+  onClick={() => addCashMovement("in")}
+  hidden={isCashClosed}
+  style={{ display: isCashClosed ? "none" : undefined }}
+>
+  + Pemasukan
+</button>
 
     <button
-      type="button"
-      className="btn btn-outline btn-danger-soft"
-      onClick={() => addCashMovement("out")}
-    >
-      - Pengeluaran
-    </button>
+  type="button"
+  className="btn btn-outline btn-danger-soft"
+  onClick={() => addCashMovement("out")}
+  hidden={isCashClosed}
+  style={{ display: isCashClosed ? "none" : undefined }}
+>
+  - Pengeluaran
+</button>
 
     <button
   type="button"
@@ -2462,7 +2537,7 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   className="btn btn-outline btn-danger-soft"
   onClick={() => setShowCloseCash(true)}
 >
-  Tutup Kas
+  {isCashClosed ? "Detail Tutup Kas" : "Tutup Kas"}
 </button>
 
   </div>
