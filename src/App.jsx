@@ -2286,6 +2286,56 @@ width: 100%; justify-content: center; white-space: nowrap;}
   min-height: 36px;
 }
 
+.shift-detail-transactions {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.16);
+}
+
+.shift-detail-section-title {
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.shift-transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.shift-transaction-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.shift-transaction-title {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.shift-transaction-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.shift-transaction-item strong {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -3456,10 +3506,10 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
   t => Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
 );
 
-const sessionTxns =
-  paymentFilter === "Semua"
-    ? sessionTxnsAll
-    : sessionTxnsAll.filter(t => (t.payMethod || t.pay_method) === paymentFilter);
+      const sessionTxns =
+        paymentFilter === "Semua"
+        ? sessionTxnsAll
+        : sessionTxnsAll.filter(t => (t.payMethod || t.pay_method) === paymentFilter);
 
       const sessionMovements = cashMovements.filter(
         m => Number(m.session_id) === Number(session.id)
@@ -3505,6 +3555,7 @@ const sessionTxns =
         systemCash,
         difference,
         transactionCount: sessionTxns.length,
+        transactions: sessionTxns,
       };
     });
 
@@ -3829,6 +3880,38 @@ const sessionTxns =
       <div className="cash-detail-note">
         {selectedShift.transactionCount} transaksi dalam shift ini.
       </div>
+
+      <div className="shift-detail-transactions">
+  <div className="shift-detail-section-title">Daftar Transaksi Shift Ini</div>
+
+  {selectedShift.transactions.length === 0 ? (
+    <div className="empty-state">
+      Belum ada transaksi untuk shift ini.
+    </div>
+  ) : (
+    <div className="shift-transaction-list">
+      {selectedShift.transactions.map(t => (
+        <div className="shift-transaction-item" key={t.id}>
+          <div>
+            <div className="shift-transaction-title">
+              TRX #{String(t.id).padStart(4, "0")}
+            </div>
+
+            <div className="shift-transaction-sub">
+              {new Date(t.date || t.created_at).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })} · {t.payMethod || t.pay_method || "-"}
+              {(t.paymentDetail || t.payment_detail) ? " · " + (t.paymentDetail || t.payment_detail) : ""}
+            </div>
+          </div>
+
+          <strong>{fmt(t.total || 0)}</strong>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
       <div
         style={{
