@@ -2341,6 +2341,47 @@ width: 100%; justify-content: center; white-space: nowrap;}
     visibility: hidden !important;
   }
 
+  .print-shift-report,
+  .print-shift-report * {
+    visibility: visible !important;
+  }
+
+  .print-shift-report {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 24px !important;
+  }
+
+  .modal-backdrop {
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  .modal-close-btn,
+  .print-shift-report button {
+    display: none !important;
+  }
+
+  .shift-transaction-list {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
   .receipt-print,
   .receipt-print * {
     visibility: visible !important;
@@ -3776,11 +3817,9 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
           ))
           )};
 
-          
-
 {selectedShift && (
   <div className="modal-backdrop">
-    <div className="modal-card">
+    <div className="modal-card print-shift-report">
       <div
         style={{
           position: "relative",
@@ -3914,27 +3953,44 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
 </div>
 
       <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginTop: 16,
-        }}
-      >
-        <button
-          type="button"
-          className="btn btn-outline"
-          style={{
-            width: 180,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-          }}
-          onClick={() => setSelectedShift(null)}
-        >
-          Tutup
-        </button>
-      </div>
+  style={{
+    display: "flex",
+    gap: 10,
+    justifyContent: "center",
+    marginTop: 16,
+    flexWrap: "wrap",
+  }}
+>
+  <button
+    type="button"
+    className="btn btn-outline"
+    style={{
+      width: 180,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+    }}
+    onClick={() => setSelectedShift(null)}
+  >
+    Tutup
+  </button>
+
+  <button
+    type="button"
+    className="btn btn-primary"
+    style={{
+      width: 180,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+    }}
+    onClick={() => window.print()}
+  >
+    Cetak Laporan
+  </button>
+</div>
     </div>
   </div>
 )}
