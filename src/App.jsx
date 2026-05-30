@@ -6576,19 +6576,38 @@ const addCashMovement = async (type) => {
       return;
     }
 
+    if (String(cashSession?.status || "").toLowerCase() === "closed") {
+      alert("Kas sudah ditutup. Pemasukan/pengeluaran tidak bisa ditambahkan.");
+      return;
+    }
+
     const label = type === "in" ? "pemasukan" : "pengeluaran";
-    const amountText = prompt("Nominal " + label + ":");
 
-    if (amountText === null) return;
+    const amountText = window.prompt("Nominal " + label + ":");
 
-    const amount = Number(amountText || 0);
+    if (amountText === null) {
+      return;
+    }
 
-    if (amount <= 0) {
+    const amount = Number(String(amountText || "").replace(/\D/g, ""));
+
+    if (!amount || amount <= 0) {
       alert("Nominal harus lebih dari 0.");
       return;
     }
 
-    const description = prompt("Keterangan " + label + ":") || "";
+    const descriptionText = window.prompt("Keterangan " + label + ":");
+
+    if (descriptionText === null) {
+      return;
+    }
+
+    const description = String(descriptionText || "").trim();
+
+    if (!description) {
+      alert("Keterangan tidak boleh kosong.");
+      return;
+    }
 
     await sb.post("cash_movements", [
       {
@@ -6596,10 +6615,12 @@ const addCashMovement = async (type) => {
         type,
         amount,
         description,
+        created_at: new Date().toISOString(),
       },
     ]);
 
     await loadCashToday();
+    await loadAll();
 
     alert("Berhasil menyimpan " + label + ".");
   } catch (err) {
