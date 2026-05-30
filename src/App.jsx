@@ -2336,6 +2336,30 @@ width: 100%; justify-content: center; white-space: nowrap;}
   white-space: nowrap;
 }
 
+.history-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.history-stats-grid .stat-card {
+  min-height: 120px;
+  padding: 18px;
+}
+
+@media (max-width: 1100px) {
+  .history-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .history-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -5494,10 +5518,13 @@ const toggleStockManagement = async (id) => {
 }
 
 // ─── HISTORY (RIWAYAT PENJUALAN) ──────────────────────────────────────────────
-function History({ transactions, settings, onVoidTransaction }) {
+function History({ transactions, settings, onVoidTransaction, cashSessions = [] }) {
   const [period, setPeriod] = useState("hari");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [detail, setDetail] = useState(null);
+  const [historyDate, setHistoryDate] = useState(new Date().toISOString().slice(0, 10));
+  const [historyPayFilter, setHistoryPayFilter] = useState("Semua");
+  const [historyShiftFilter, setHistoryShiftFilter] = useState("Semua");
 
   const printHistoryReceipt = (txn) => {
   const printWindow = window.open("", "_blank", "width=380,height=600");
@@ -5608,37 +5635,48 @@ function History({ transactions, settings, onVoidTransaction }) {
   return transactions.filter(t => {
     const dateStr = new Date(t.date).toISOString().slice(0, 10);
     const selectedStr = selectedDate.slice(0, 10);
+    const payMethod = t.payMethod || t.pay_method || "Tunai";
+
+    if (historyPayFilter !== "Semua" && payMethod !== historyPayFilter) {
+      return false;
+  }
+
+    const txnSessionId = t.cashSessionId || t.cash_session_id || null;
+
+    if (historyShiftFilter !== "Semua" && Number(txnSessionId) !== Number(historyShiftFilter)) {
+    return false;
+  }
 
     if (period === "hari") {
       return dateStr === selectedStr;
     }
 
     if (period === "minggu") {
-      const d = new Date(dateStr + "T00:00:00");
-      const sel = new Date(selectedStr + "T00:00:00");
+    const d = new Date(dateStr + "T00:00:00");
+    const sel = new Date(selectedStr + "T00:00:00");
 
-      const startOfWeek = new Date(sel);
+    const startOfWeek = new Date(sel);
       startOfWeek.setDate(sel.getDate() - sel.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
 
-      const endOfWeek = new Date(startOfWeek);
+    const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      return d >= startOfWeek && d <= endOfWeek;
+  return d >= startOfWeek && d <= endOfWeek;
     }
 
     if (period === "bulan") {
-      return dateStr.slice(0, 7) === selectedStr.slice(0, 7);
+  return dateStr.slice(0, 7) === selectedStr.slice(0, 7);
     }
 
     if (period === "tahun") {
-      return dateStr.slice(0, 4) === selectedStr.slice(0, 4);
+  return dateStr.slice(0, 4) === selectedStr.slice(0, 4);
     }
 
-    return true;
+return true;
   });
-}, [transactions, period, selectedDate]);
+}, [transactions, period, selectedDate, historyPayFilter, historyShiftFilter]);
 
   const activeFiltered = filtered.filter(t => t.status !== "void");
 
@@ -5712,6 +5750,40 @@ const itemsSold = activeFiltered.reduce(
   </div>
 )}
 
+<div className="report-payment-filter">
+  {["Semua", "Tunai", "QRIS", "Transfer"].map(method => (
+    <button
+      key={method}
+      type="button"
+      className={historyPayFilter === method ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+      onClick={() => setHistoryPayFilter(method)}
+    >
+      {method}
+    </button>
+  ))}
+</div>
+
+<select
+  className="input"
+  value={historyShiftFilter}
+  onChange={e => setHistoryShiftFilter(e.target.value)}
+  style={{ width: 240 }}
+>
+  <option value="Semua">Semua Shift</option>
+
+  {[...cashSessions]
+    .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+    .map(session => (
+      <option key={session.id} value={session.id}>
+        Shift #{session.id} · {String(session.status || "").toLowerCase() === "closed" ? "Ditutup" : "Open"} ·{" "}
+        {new Date(session.created_at || session.date).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+        })}
+      </option>
+    ))}
+</select>
+
 {period === "tahun" && (
   <select
     className="input"
@@ -5727,7 +5799,7 @@ const itemsSold = activeFiltered.reduce(
         </div>
       </div>
 
-      <div className="stats-grid" style={{ marginBottom: 20 }}>
+      <div className="history-stats-grid" style={{ marginBottom: 20 }}>
         <div className="stat-card blue">
           <div className="stat-icon"><Icon name="cart" /></div>
           <div className="stat-label">Jumlah Transaksi</div>
@@ -6986,11 +7058,7 @@ const topbarItemsToday = topbarTodayTxns.reduce(
   />
 )}
             {page === "products" && <Products products={products} setProducts={setProductsWithSync} transactions={activeTransactions} />}
-            {page === "history" && <History
-  transactions={transactions}
-  settings={settings}
-  onVoidTransaction={voidTransaction}
-/>}
+            {page === "history" && <History transactions={transactions} settings={settings} onVoidTransaction={voidTransaction} cashSessions={cashSessions} />}
             {page === "reports" && (
   <CashShiftReport
     cashSessions={cashSessions}
