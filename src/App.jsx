@@ -301,9 +301,9 @@ const styles = `
 }
   .product-card-pos:hover { border-color: var(--primary); transform: translateY(-2px); }
   .product-card-pos .emoji { font-size: 32px; }
-  .product-card-pos .pname { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
-  .product-card-pos .pprice { font-size: 12px; color: var(--primary); font-weight: 700; }
-  .product-card-pos .pstock { font-size: 11px; color: var(--text-muted); }
+  .product-card-pos .pname { font-size: 13px; font-weight: 1000; color: var(--text); line-height: 1.5; }
+  .product-card-pos .pprice { font-size: 13px; font-weight: 1000; color: var(--primary); }
+  .product-card-pos .pstock { font-size: 10px; font-weight: 1000; color: var(--text-muted); }
   .product-card-pos.out-of-stock {
   opacity: 0.55;
   background: #f8fafc;
@@ -951,9 +951,9 @@ const styles = `
 
 .category-chips {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 4px 2px 14px;
+  padding: 4px 2px 10px;
   margin-bottom: 12px;
 }
 
@@ -962,12 +962,12 @@ const styles = `
   background: #ffffff;
   color: var(--text-muted);
   border-radius: 999px;
-  padding: 11px 14px;
-  font-size: 8px;
-  font-weight: 800;
+  padding: 10px 10px;
+  font-size: 14px;
+  font-weight: 1000;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
