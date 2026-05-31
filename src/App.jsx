@@ -3575,7 +3575,9 @@ function CashShiftReport({ cashSessions, transactions, cashMovements }) {
     .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
     .map(session => {
       const sessionTxnsAll = transactions.filter(
-  t => Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
+  t =>
+    t.status !== "void" &&
+    Number(t.cashSessionId || t.cash_session_id) === Number(session.id)
 );
 
       const sessionTxns =
