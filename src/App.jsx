@@ -6083,6 +6083,7 @@ const itemsSold = activeFiltered.reduce(
 function Reports({ transactions }) {
   const [tab, setTab] = useState("penjualan");
   const now = new Date();
+  const activeTransactions = transactions.filter(t => t.status !== "void");
 
   const tabs = [
     { id: "penjualan", label: "📋 Transaksi Penjualan" },
@@ -6093,7 +6094,7 @@ function Reports({ transactions }) {
 
   // Monthly data for current year
   const months = Array.from({ length: 12 }, (_, m) => {
-    const txns = transactions.filter(t => new Date(t.date).getMonth() === m && new Date(t.date).getFullYear() === now.getFullYear());
+    const txns = activeTransactions.filter(t => new Date(t.date).getMonth() === m && new Date(t.date).getFullYear() === now.getFullYear());
     return {
       label: new Date(now.getFullYear(), m, 1).toLocaleDateString("id-ID", { month: "short" }),
       omzet: txns.reduce((s, t) => s + t.total, 0),
@@ -6106,7 +6107,7 @@ function Reports({ transactions }) {
 
   // Product report
   const prodMap = {};
-  transactions.forEach(t => t.items.forEach(i => {
+  activeTransactions.forEach(t => t.items.forEach(i => {
     if (!prodMap[i.name]) prodMap[i.name] = { sold: 0, revenue: 0 };
     prodMap[i.name].sold += i.qty;
     prodMap[i.name].revenue += i.subtotal;
@@ -6114,8 +6115,8 @@ function Reports({ transactions }) {
   const prodReport = Object.entries(prodMap).sort((a, b) => b[1].revenue - a[1].revenue);
 
   // This month
-  const thisMonth = transactions.filter(t => new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear());
-  const totalOmzetYear = transactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + t.total, 0);
+  const thisMonth = activeTransactions.filter(t => new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear());
+  const totalOmzetYear = activeTransactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + t.total, 0);
 
   return (
     <div>
@@ -6131,7 +6132,7 @@ function Reports({ transactions }) {
             <div className="stat-card green"><div className="stat-icon"><Icon name="trending" /></div><div className="stat-label">Omzet Bulan Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(thisMonth.reduce((s, t) => s + t.total, 0))}</div></div>
             <div className="stat-card blue"><div className="stat-icon"><Icon name="cart" /></div><div className="stat-label">Transaksi Bulan Ini</div><div className="stat-value">{thisMonth.length}</div></div>
             <div className="stat-card orange"><div className="stat-icon"><Icon name="bar" /></div><div className="stat-label">Omzet Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(totalOmzetYear)}</div></div>
-            <div className="stat-card red"><div className="stat-icon"><Icon name="tag" /></div><div className="stat-label">Profit Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(transactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + t.profit, 0))}</div></div>
+            <div className="stat-card red"><div className="stat-icon"><Icon name="tag" /></div><div className="stat-label">Profit Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(activeTransactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + number(t.profit || 0), ))}</div></div>
           </div>
           <div className="card">
             <div className="section-header"><div className="section-title">Semua Transaksi (Bulan Ini)</div></div>
