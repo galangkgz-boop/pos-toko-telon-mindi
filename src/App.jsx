@@ -96,7 +96,9 @@ const buildThermalReceipt = (txn, settings) => {
   }).join("");
 
   const paid = Number(txn.paid || txn.cashReceived || txn.payment || 0);
-  const change = Number(txn.change || 0);
+const change = Number(txn.change || 0);
+const receiptSubtotal = Number(txn.subtotal || txn.total || 0);
+const receiptDiscount = Number(txn.discountAmount || txn.discount_amount || 0);
 
   return [
   "\x1B\x40",
@@ -113,8 +115,11 @@ const buildThermalReceipt = (txn, settings) => {
     line,
     items,
     line,
-    "TOTAL      " + fmt(txn.total) + "\n",
-    txn.payMethod === "Tunai" ? "Bayar      " + fmt(paid) + "\n" : "",
+    line,
+"Subtotal   " + fmt(receiptSubtotal) + "\n",
+receiptDiscount > 0 ? "Diskon     -" + fmt(receiptDiscount) + "\n" : "",
+"TOTAL      " + fmt(txn.total) + "\n",
+txn.payMethod === "Tunai" ? "Bayar      " + fmt(paid) + "\n" : "",
     txn.payMethod === "Tunai" ? "Kembali    " + fmt(change) + "\n" : "",
     line,
     "\x1B\x61\x01",
@@ -4284,24 +4289,26 @@ const paymentSuggestions = getPaymentSuggestions(total);
   }
 
     const txn = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      items: cart.map(c => ({
-        productId: Number(c.productId || c.id),
-        variantId: c.variantId || null,
-        name: c.name,
-        qty: Number(c.qty || 0),
-        stockQtyPerItem: Number(c.stockQtyPerItem || 1),
-        stockQtyTotal: Number(c.qty || 0) * Number(c.stockQtyPerItem || 1),
-        price: Number(c.price || 0),
-        cost: Number(c.cost || 0),
-        discount: Number(c.discount || 0),
-        subtotal: Math.round(Number(c.price || 0) * Number(c.qty || 0) * (1 - Number(c.discount || 0) / 100))
-})),
-      total,
-      cost: cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
-      profit: total - cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
-      payMethod,
+  id: Date.now(),
+  date: new Date().toISOString(),
+  items: cart.map(c => ({
+    productId: Number(c.productId || c.id),
+    variantId: c.variantId || null,
+    name: c.name,
+    qty: Number(c.qty || 0),
+    stockQtyPerItem: Number(c.stockQtyPerItem || 1),
+    stockQtyTotal: Number(c.qty || 0) * Number(c.stockQtyPerItem || 1),
+    price: Number(c.price || 0),
+    cost: Number(c.cost || 0),
+    discount: Number(c.discount || 0),
+    subtotal: Math.round(Number(c.price || 0) * Number(c.qty || 0) * (1 - Number(c.discount || 0) / 100))
+  })),
+  subtotal,
+  discountAmount,
+  total,
+  cost: cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+  profit: total - cart.reduce((s, c) => s + Number(c.cost || 0) * Number(c.qty || 0), 0),
+  payMethod,
       paymentDetail:
         payMethod === "Transfer" && selectedBankAccount ? selectedBankAccount.bank + " - " + selectedBankAccount.number
       : payMethod === "QRIS" ? "QRIS"
@@ -4376,9 +4383,23 @@ try {
               </div>
             ))}
             <hr className="receipt-divider" />
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
-              <span>TOTAL</span><span>{fmt(lastTxn.total)}</span>
-            </div>
+
+<div style={{ display: "flex", justifyContent: "space-between" }}>
+  <span>Subtotal</span>
+  <span>{fmt(Number(lastTxn.subtotal || lastTxn.total || 0))}</span>
+</div>
+
+{Number(lastTxn.discountAmount || lastTxn.discount_amount || 0) > 0 && (
+  <div style={{ display: "flex", justifyContent: "space-between", color: "var(--danger)" }}>
+    <span>Diskon Tambahan</span>
+    <span>-{fmt(Number(lastTxn.discountAmount || lastTxn.discount_amount || 0))}</span>
+  </div>
+)}
+
+<div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+  <span>TOTAL</span>
+  <span>{fmt(lastTxn.total)}</span>
+</div>
             {lastTxn.payMethod === "Tunai" && (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -5617,10 +5638,26 @@ function History({ transactions, settings, onVoidTransaction, cashSessions = [] 
 
         <div class="line"></div>
 
-        <div class="row total">
-          <span>TOTAL</span>
-          <span>${fmt(txn.total)}</span>
-        </div>
+        <div class="row">
+  <span>Subtotal</span>
+  <span>${fmt(Number(txn.subtotal || txn.total || 0))}</span>
+</div>
+
+${
+  Number(txn.discountAmount || txn.discount_amount || 0) > 0
+    ? `
+      <div class="row">
+        <span>Diskon Tambahan</span>
+        <span>-${fmt(Number(txn.discountAmount || txn.discount_amount || 0))}</span>
+      </div>
+    `
+    : ""
+}
+
+<div class="row total">
+  <span>TOTAL</span>
+  <span>${fmt(txn.total)}</span>
+</div>
 
         ${
           txn.payMethod === "Tunai"
@@ -5890,15 +5927,28 @@ const itemsSold = activeFiltered.reduce(
   </td>
 
   <td
-    style={{
-      textAlign: "center",
-      verticalAlign: "middle",
-      fontWeight: 700,
-      color: "var(--primary)",
-    }}
-  >
-    {fmt(t.total)}
-  </td>
+  style={{
+    textAlign: "center",
+    verticalAlign: "middle",
+    fontWeight: 700,
+    color: "var(--primary)",
+  }}
+>
+  <div>{fmt(t.total)}</div>
+
+  {Number(t.discountAmount || t.discount_amount || 0) > 0 && (
+    <div
+      style={{
+        marginTop: 3,
+        fontSize: 11,
+        color: "var(--danger)",
+        fontWeight: 800,
+      }}
+    >
+      Diskon -{fmt(Number(t.discountAmount || t.discount_amount || 0))}
+    </div>
+  )}
+</td>
 
   <td
     style={{
@@ -5980,10 +6030,33 @@ const itemsSold = activeFiltered.reduce(
               </tbody>
             </table>
             <div style={{ padding: "12px 14px", background: "var(--bg)", borderRadius: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}><span>Total</span><strong>{fmt(detail.total)}</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-muted)" }}><span>Modal</span><span>{fmt(detail.cost)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--success)", fontWeight: 700 }}><span>Profit</span><span>{fmt(detail.profit)}</span></div>
-            </div>
+  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+    <span>Subtotal</span>
+    <span>{fmt(Number(detail.subtotal || detail.total || 0))}</span>
+  </div>
+
+  {Number(detail.discountAmount || detail.discount_amount || 0) > 0 && (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--danger)", fontWeight: 700 }}>
+      <span>Diskon Tambahan</span>
+      <span>-{fmt(Number(detail.discountAmount || detail.discount_amount || 0))}</span>
+    </div>
+  )}
+
+  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 6 }}>
+    <span>Total</span>
+    <strong>{fmt(detail.total)}</strong>
+  </div>
+
+  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-muted)" }}>
+    <span>Modal</span>
+    <span>{fmt(detail.cost)}</span>
+  </div>
+
+  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--success)", fontWeight: 700 }}>
+    <span>Profit</span>
+    <span>{fmt(detail.profit)}</span>
+  </div>
+</div>
 
 <button
   type="button"
@@ -6520,11 +6593,13 @@ setVariants(
 
     // 4. Gabungkan data transaksi dengan itemnya
     const txnsWithItems = txns.map(t => ({
-      ...t,
-      total: Number(t.total || 0),
-      cost: Number(t.cost || 0),
-      profit: Number(t.profit || 0),
-      payMethod: t.pay_method || t.payMethod || "-",
+  ...t,
+  subtotal: Number(t.subtotal || t.total || 0),
+  discountAmount: Number(t.discount_amount || t.discountAmount || 0),
+  total: Number(t.total || 0),
+  cost: Number(t.cost || 0),
+  profit: Number(t.profit || 0),
+  payMethod: t.pay_method || t.payMethod || "-",
       paymentDetails: t.payment_details || t.paymentDetails || "",
       cashSessionId: t.cash_session_id || t.cashSessionId || null,
       items: items
@@ -6870,14 +6945,16 @@ const addCashMovement = async (type) => {
     const finalProfit = Number(txn.total || 0) - totalCost;
     
     [savedTxn] = await sb.post("transactions", [{
-      date: txn.date,
-      total: txn.total,
-      cost: totalCost,
-      profit: finalProfit,
-      pay_method: txn.payMethod, 
-      payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
-      cash_session_id: txn.cashSessionId || txn.cash_session_id || cashSession?.id || null,
-    }]);
+  date: txn.date,
+  subtotal: Number(txn.subtotal || txn.total || 0),
+  discount_amount: Number(txn.discountAmount || txn.discount_amount || 0),
+  total: txn.total,
+  cost: totalCost,
+  profit: finalProfit,
+  pay_method: txn.payMethod, 
+  payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
+  cash_session_id: txn.cashSessionId || txn.cash_session_id || cashSession?.id || null,
+}]);
 
     // 3. Simpan detail item transaksi
     const itemRows = processedItems.map(i => ({
@@ -6922,12 +6999,18 @@ const addCashMovement = async (type) => {
   ...(savedTxn || {}),
   id: savedTxn?.id || txn.id,
   date: savedTxn?.date || txn.date,
+  subtotal: Number(savedTxn?.subtotal || txn.subtotal || txn.total || 0),
+  discountAmount: Number(savedTxn?.discount_amount || txn.discountAmount || txn.discount_amount || 0),
   total: Number(savedTxn?.total || txn.total || 0),
   cost: totalCost,
   profit: finalProfit,
   payMethod: savedTxn?.pay_method || txn.payMethod,
   paymentDetail: savedTxn?.payment_detail || txn.payment_detail || txn.paymentDetail || txn.payMethod,
   cashSessionId: savedTxn?.cash_session_id || txn.cashSessionId || txn.cash_session_id || null,
+  paid: txn.paid,
+  cashReceived: txn.cashReceived,
+  payment: txn.payment,
+  change: txn.change,
   items: processedItems,
 };
 
