@@ -2780,6 +2780,9 @@ function Dashboard({
   setClosingCashInput,
   saveCloseCash,
   loadAll,
+  fifoAuditRows = [],
+  fifoMismatchCount = 0,
+  fifoMismatchRows = [],
 }) {
   const today = new Date();
   const activeTransactions = transactions.filter(t => t.status !== "void");
@@ -3450,6 +3453,72 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
   </div>
 </div>
+
+{fifoMismatchCount > 0 && (
+  <div
+    className="card"
+    style={{
+      marginTop: 24,
+      marginBottom: 24,
+      padding: 14,
+      border: "1px solid rgba(230, 57, 70, 0.20)",
+      background: "rgba(230, 57, 70, 0.04)",
+    }}
+  >
+    <div
+      style={{
+        fontSize: 13,
+        fontWeight: 900,
+        marginBottom: 10,
+        color: "var(--danger)",
+      }}
+    >
+      Detail Selisih FIFO
+    </div>
+
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produk</th>
+            <th style={{ textAlign: "right" }}>Stok Produk</th>
+            <th style={{ textAlign: "right" }}>Stok FIFO</th>
+            <th style={{ textAlign: "right" }}>Selisih</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fifoMismatchRows.slice(0, 5).map(row => (
+            <tr key={row.productId}>
+              <td>
+                <strong>{row.name}</strong>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  {row.category || "-"}
+                </div>
+              </td>
+              <td style={{ textAlign: "right" }}>{row.productStock}</td>
+              <td style={{ textAlign: "right" }}>{row.batchQty}</td>
+              <td
+                style={{
+                  textAlign: "right",
+                  color: row.diff > 0 ? "var(--danger)" : "var(--primary)",
+                  fontWeight: 900,
+                }}
+              >
+                {row.diff}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {fifoMismatchRows.length > 5 && (
+      <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
+        Menampilkan 5 dari {fifoMismatchRows.length} produk selisih.
+      </div>
+    )}
+  </div>
+)}
 
         <div className="dashboard-two-columns">        
         <div className="dashboard-two-columns">  
@@ -6134,7 +6203,7 @@ function Reports({ transactions }) {
             <div className="stat-card green"><div className="stat-icon"><Icon name="trending" /></div><div className="stat-label">Omzet Bulan Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(thisMonth.reduce((s, t) => s + t.total, 0))}</div></div>
             <div className="stat-card blue"><div className="stat-icon"><Icon name="cart" /></div><div className="stat-label">Transaksi Bulan Ini</div><div className="stat-value">{thisMonth.length}</div></div>
             <div className="stat-card orange"><div className="stat-icon"><Icon name="bar" /></div><div className="stat-label">Omzet Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(totalOmzetYear)}</div></div>
-            <div className="stat-card red"><div className="stat-icon"><Icon name="tag" /></div><div className="stat-label">Profit Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(activeTransactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + number(t.profit || 0), ))}</div></div>
+            <div className="stat-card red"><div className="stat-icon"><Icon name="tag" /></div><div className="stat-label">Profit Tahun Ini</div><div className="stat-value" style={{ fontSize: 17 }}>{fmt(activeTransactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + Number(t.profit || 0), 0))}</div></div>
           </div>
           <div className="card">
             <div className="section-header"><div className="section-title">Semua Transaksi (Bulan Ini)</div></div>
@@ -6216,7 +6285,7 @@ function Reports({ transactions }) {
                 <thead><tr><th>Bulan</th><th>Omzet</th><th>Modal (HPP)</th><th>Profit Bersih</th><th>Margin %</th></tr></thead>
                 <tbody>
                   {months.map((m, i) => {
-                    const modal = transactions.filter(t => new Date(t.date).getMonth() === i && new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + t.cost, 0);
+                    const modal = activeTransactions.filter(t => new Date(t.date).getMonth() === i && new Date(t.date).getFullYear() === now.getFullYear()).reduce((s, t) => s + Number(t.cost || 0), 0);
                     const margin = m.omzet > 0 ? ((m.profit / m.omzet) * 100).toFixed(1) : 0;
                     return (
                       <tr key={i}>
@@ -6425,6 +6494,7 @@ export default function App() {
   const [showCashDetail, setShowCashDetail] = useState(false);
   const [showCloseCash, setShowCloseCash] = useState(false);
   const [closingCashInput, setClosingCashInput] = useState("");
+  const [stockBatches, setStockBatches] = useState([]);
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -6433,6 +6503,31 @@ const defaultSettings = {
   receipt_footer: "Terima kasih sudah berbelanja",
 };
 const activeTransactions = transactions.filter(t => t.status !== "void");
+const fifoAuditRows = useMemo(() => {
+  return products.map(product => {
+    const productId = Number(product.id);
+
+    const batchQty = stockBatches
+      .filter(batch => Number(batch.product_id) === productId)
+      .reduce((sum, batch) => sum + Number(batch.qty_remaining || 0), 0);
+
+    const productStock = Number(product.stock || 0);
+    const diff = productStock - batchQty;
+
+    return {
+      productId,
+      name: product.name,
+      category: product.category,
+      productStock,
+      batchQty,
+      diff,
+      status: diff === 0 ? "ok" : "mismatch",
+    };
+  });
+}, [products, stockBatches]);
+
+const fifoMismatchCount = fifoAuditRows.filter(row => row.status === "mismatch").length;
+const fifoMismatchRows = fifoAuditRows.filter(row => row.status === "mismatch");
 const voidTransaction = async (txn, reason) => {
   if (!txn || !txn.id || txn.status === "void") return;
 
@@ -6581,6 +6676,7 @@ const rowsToSettings = (rows) => {
 
     const prods = await sb.get("products", "?select=*&order=id.asc");
     setProducts(prods);
+    const batches = await sb.get("stock_batches", "?select=*&order=created_at.asc");
 
     const variantRows = await sb.get(
   "product_variants",
@@ -7001,15 +7097,16 @@ const addCashMovement = async (type) => {
   change: txn.change,
   items: processedItems,
 };
-
-    setTransactions(prev => [fullTxn, ...prev]);
-
     setProducts(prev =>
       prev.map(p => {
         const update = productStockUpdates.find(u => u.id === p.id);
         return update ? { ...p, stock: update.stock } : p;
       })
     );
+    setStockBatches(batches || []);
+    setTransactions(prev => [fullTxn, ...prev]);
+
+    
 
     showSync("saved");
     return fullTxn;
@@ -7210,6 +7307,20 @@ const topbarItemsToday = topbarTodayTxns.reduce(
       <strong>{fmt(topbarProfitToday)}</strong>
       <small>bersih</small>
     </div>
+
+    <div
+  style={{
+    padding: "8px 12px",
+    borderRadius: 12,
+    background: fifoMismatchCount > 0 ? "rgba(230, 57, 70, 0.10)" : "rgba(30, 111, 92, 0.10)",
+    color: fifoMismatchCount > 0 ? "var(--danger)" : "var(--primary)",
+    fontSize: 12,
+    fontWeight: 800,
+    whiteSpace: "nowrap",
+  }}
+>
+  Audit FIFO: {fifoMismatchCount > 0 ? String(fifoMismatchCount) + " selisih" : "OK"}
+</div>
   </div>
 )}
 
@@ -7241,6 +7352,9 @@ const topbarItemsToday = topbarTodayTxns.reduce(
     setClosingCashInput={setClosingCashInput}
     saveCloseCash={saveCloseCash}
     loadAll={loadAll}
+    fifoAuditRows={fifoAuditRows}
+    fifoMismatchCount={fifoMismatchCount}
+    fifoMismatchRows={fifoMismatchRows}
   />
 )}
             {page === "cashier" && (
