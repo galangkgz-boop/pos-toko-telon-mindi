@@ -103,8 +103,7 @@ const receiptDiscount = Number(txn.discountAmount || txn.discount_amount || 0);
   return [
   "\x1B\x40",
   "\x1B\x61\x01",
-  "AGEN SOSIS & ES KRISTAL\n",
-  "TOKO TELON MINDI\n",
+  String(storeName || "TOKO TELON MINDI").toUpperCase() + "\n",
   address ? address + "\n" : "",
   phone ? "WA: " + phone + "\n" : "",
     "\x1B\x61\x00",
@@ -4327,12 +4326,10 @@ try {
           </div>
          <div id="receipt-print" className="receipt receipt-print">
             <div style={{ textAlign: "center", marginBottom: 8, lineHeight: 1.35 }}>
+ 
   <div style={{ fontWeight: 800, fontSize: 13 }}>
-    AGEN SOSIS & ES KRISTAL
-  </div>
-  <div style={{ fontWeight: 800, fontSize: 13 }}>
-    TOKO TELON MINDI
-  </div>
+  {String(settings?.storeName || settings?.store_name || "TOKO TELON MINDI").toUpperCase()}
+</div>
 
   {settings?.store_address && (
     <>
@@ -5597,7 +5594,7 @@ function History({ transactions, settings, onVoidTransaction, cashSessions = [] 
       </head>
       <body>
         <div class="center">
-          <strong>${settings?.store_name || "Toko Telon Mindi"}</strong><br/>
+          <strong>${String(settings?.storeName || settings?.store_name || "Toko Telon Mindi").toUpperCase()}</strong><br/>
           ${settings?.store_address || ""}<br/>
           ${settings?.store_phone ? "WA: " + settings.store_phone : ""}
         </div>
