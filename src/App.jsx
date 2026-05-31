@@ -2367,6 +2367,19 @@ width: 100%; justify-content: center; white-space: nowrap;}
   font-weight: 900;
 }
 
+.product-sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: var(--bg);
+  padding: 0 0 14px;
+  margin-bottom: 14px;
+}
+
+.product-sticky-toolbar .search-bar {
+  margin-bottom: 0;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -5188,8 +5201,9 @@ const toggleStockManagement = async (id) => {
     if (subMenu === "daftar") {
       return (
         <>
-          <div className="search-bar">
-            <div className="input-group" style={{ flex: 1 }}>
+          
+          <div className="search-bar product-sticky-toolbar">
+            <div className="input-group" style={{ flex: 1, }}>
               <span className="input-icon"><Icon name="search" size={15} /></span>
               <input className="input" placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
@@ -6677,6 +6691,7 @@ const rowsToSettings = (rows) => {
     const prods = await sb.get("products", "?select=*&order=id.asc");
     setProducts(prods);
     const batches = await sb.get("stock_batches", "?select=*&order=created_at.asc");
+    setStockBatches(batches || []);
 
     const variantRows = await sb.get(
   "product_variants",
@@ -7103,10 +7118,10 @@ const addCashMovement = async (type) => {
         return update ? { ...p, stock: update.stock } : p;
       })
     );
-    setStockBatches(batches || []);
+
     setTransactions(prev => [fullTxn, ...prev]);
 
-    
+    await loadAll(); // reload untuk sinkronisasi penuh
 
     showSync("saved");
     return fullTxn;
