@@ -2782,9 +2782,10 @@ function Dashboard({
   loadAll,
 }) {
   const today = new Date();
+  const activeTransactions = transactions.filter(t => t.status !== "void");
   const todayStr = today.toDateString();
 
-  const todayTxns = transactions.filter(t => new Date(t.date).toDateString() === todayStr);
+  const todayTxns = activeTransactions.filter(t => new Date(t.date).toDateString() === todayStr);
   const sessionStart = cashSession?.created_at
   ? new Date(cashSession.created_at)
   : new Date(new Date().toISOString().slice(0, 10));
@@ -2880,17 +2881,17 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
   const maxSoldToday = topProductsToday[0]?.[1] || 1;
 
-  const monthTxns = transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  });
+  const monthTxns = activeTransactions.filter(t => {
+  const d = new Date(t.date);
+  return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+});
   const monthOmzet = monthTxns.reduce((s, t) => s + t.total, 0);
 
   // Last 7 days chart
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (6 - i));
-    const dayTxns = transactions.filter(t => new Date(t.date).toDateString() === d.toDateString());
+    const dayTxns = activeTransactions.filter(t => new Date(t.date).toDateString() === d.toDateString());
     return { label: d.toLocaleDateString("id-ID", { weekday: "short" }), value: dayTxns.reduce((s, t) => s + t.total, 0) };
   });
   const maxBar = Math.max(...last7.map(d => d.value), 1);
