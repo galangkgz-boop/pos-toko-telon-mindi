@@ -2360,6 +2360,33 @@ width: 100%; justify-content: center; white-space: nowrap;}
   }
 }
 
+.table th,
+.table td {
+  text-transform: uppercase !important;
+}
+
+.product-table th:nth-child(2) {
+  text-align: center !important;
+}
+
+.product-table td:nth-child(2) {
+  text-align: left !important;
+  min-width: 220px;
+}
+
+.product-table td:nth-child(2) strong,
+.product-table td:nth-child(2) div,
+.product-table td:nth-child(2) span,
+.product-table td:nth-child(2) .product-name {
+  text-align: left !important;
+}
+
+.pname {
+  text-transform: uppercase !important;
+  font-size: 13px !important;
+  font-weight: 900;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -5105,7 +5132,7 @@ const toggleStockManagement = async (id) => {
           </div>
           <div className="card">
             <div className="table-wrap">
-              <table>
+              <table className="table product-table">
                 <thead>
   		<tr>
     <th>#</th>
@@ -5826,30 +5853,107 @@ const itemsSold = activeFiltered.reduce(
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>No.</th><th>Tanggal & Waktu</th><th>Item</th><th>Total</th><th>Profit</th><th>Bayar</th><th>Detail</th></tr></thead>
+            <thead>
+              <tr>
+                <th style={{textAlign: "center"}}>No.</th>
+                <th style={{textAlign: "center"}}>Tanggal & Waktu</th>
+                <th style={{textAlign: "center"}}>Item</th>
+                <th style={{textAlign: "center"}}>Total</th>
+                <th style={{textAlign: "center"}}>Profit</th>
+                <th style={{textAlign: "center"}}>Bayar</th>
+                <th style={{textAlign: "center"}}>Detail</th>
+              </tr>
+            </thead>
             <tbody>
               {[...filtered].sort((a, b) => new Date(b.date) - new Date(a.date)).map((t, i) => (
-                <tr key={t.id}>
-                  <td style={{ color: "var(--text-muted)", fontWeight: 600 }}>#{t.id.toString().padStart(4, "0")}</td>
-                  <td><div style={{ fontSize: 13 }}>{fmtDate(t.date)}</div><div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{fmtTime(t.date)}</div></td>
-                  <td>{t.items.reduce((s, i) => s + i.qty, 0)} item</td>
-                  <td style={{ fontWeight: 700, color: "var(--primary)" }}>{fmt(t.total)}</td>
-                  <td style={{ fontWeight: 700, color: t.profit > 0 ? "var(--success)" : "var(--danger)" }}>{fmt(t.profit)}</td>
-                  <td><span className={`badge ${t.payMethod === "Tunai" ? "badge-green" : t.payMethod === "QRIS" ? "badge-blue" : "badge-orange"}`}>{t.payMethod}</span></td>
-                  <td>
-  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    {t.status === "void" && (
-      <span className="badge badge-red">
-        BATAL
-      </span>
-    )}
 
-    <button className="btn btn-sm btn-outline" onClick={() => setDetail(t)}>
-      Lihat
-    </button>
-  </div>
-</td>
-                </tr>
+                <tr key={t.id}>
+  <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+    #{t.id.toString().padStart(4, "0")}
+  </td>
+
+  <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+    <div style={{ fontSize: 13, textAlign: "center" }}>{fmtDate(t.date)}</div>
+    <div
+      style={{
+        fontSize: 11.5,
+        color: "var(--text-muted)",
+        textAlign: "center",
+      }}
+    >
+      {fmtTime(t.date)}
+    </div>
+  </td>
+
+  <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+    {t.items.reduce((s, i) => s + i.qty, 0)} item
+  </td>
+
+  <td
+    style={{
+      textAlign: "center",
+      verticalAlign: "middle",
+      fontWeight: 700,
+      color: "var(--primary)",
+    }}
+  >
+    {fmt(t.total)}
+  </td>
+
+  <td
+    style={{
+      textAlign: "center",
+      verticalAlign: "middle",
+      fontWeight: 700,
+      color: t.profit > 0 ? "var(--success)" : "var(--danger)",
+    }}
+  >
+    {fmt(t.profit)}
+  </td>
+
+  <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+    <span
+      className={`badge ${
+        t.payMethod === "Tunai"
+          ? "badge-green"
+          : t.payMethod === "QRIS"
+          ? "badge-blue"
+          : "badge-orange"
+      }`}
+    >
+      {t.payMethod}
+    </span>
+  </td>
+
+  <td
+    style={{
+      textAlign: "center",
+      verticalAlign: "middle",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+      }}
+    >
+      {t.status === "void" && (
+        <span className="badge badge-red">
+          BATAL
+        </span>
+      )}
+
+      <button
+        className="btn btn-sm btn-outline"
+        onClick={() => setDetail(t)}
+      >
+        Lihat
+      </button>
+    </div>
+  </td>
+</tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 30 }}>Tidak ada transaksi pada periode ini</td></tr>}
             </tbody>
@@ -6620,7 +6724,6 @@ const addCashMovement = async (type) => {
     ]);
 
     await loadCashToday();
-    await loadAll();
 
     alert("Berhasil menyimpan " + label + ".");
   } catch (err) {
