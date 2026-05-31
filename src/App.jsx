@@ -4591,10 +4591,9 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
             const itemTotal = Math.round(c.price * c.qty * (1 - disc / 100));
             return (
               <div key={c.id} className="cart-item">
-                <div>{c.image}</div>
                 <div className="cart-item-info">
                   <div className="cart-item-name">{c.name}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)" }}>{fmt(itemTotal)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 900, color: "var(--primary)" }}>{fmt(itemTotal)}</div>
                 </div>
                 <div className="qty-ctrl">
                   <button className="qty-btn" onClick={() => updateQty(c.id, -1)}>−</button>
