@@ -115,7 +115,6 @@ const receiptDiscount = Number(txn.discountAmount || txn.discount_amount || 0);
     line,
     items,
     line,
-    line,
 "Subtotal   " + fmt(receiptSubtotal) + "\n",
 receiptDiscount > 0 ? "Diskon     -" + fmt(receiptDiscount) + "\n" : "",
 "TOTAL      " + fmt(txn.total) + "\n",
@@ -583,29 +582,6 @@ const styles = `
     padding-bottom: 110px;
   }
 }
-<div
-  className="mobile-sheet-head"
-  onClick={() => setCartOpen(v => !v)}
->
-  <div className="sheet-handle"></div>
-
-  <div className="sheet-summary">
-    <div>
-      <div className="mobile-checkout-label">Total</div>
-      <strong>{fmt(total)}</strong>
-    </div>
-
-    <button
-      className="mobile-buy-btn"
-      disabled={cart.length === 0}
-      onClick={(e) => {
-        e.stopPropagation();
-        setShowPayModal(true);
-      }}
-    >
-      Beli ({cartCount})
-    </button>
-  </div>
 </div>
 
 /* SIDEBAR COLLAPSE */
@@ -1007,7 +983,7 @@ const styles = `
 }
 .payment-suggestions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -6463,6 +6439,13 @@ const voidTransaction = async (txn, reason) => {
   try {
     const items = txn.items || [];
 
+    // 1. Ambil movement OUT dari transaksi ini.
+    const stockOutMovements = await sb.get(
+      "stock_movements",
+      `?select=*&transaction_id=eq.${txn.id}&type=eq.OUT`
+    );
+
+    // 2. Kembalikan stok total produk.
     for (const item of items) {
       const productId = Number(item.productId || item.product_id);
       const returnQty = Number(
@@ -6490,6 +6473,44 @@ const voidTransaction = async (txn, reason) => {
       );
     }
 
+    // 3. Kembalikan qty_remaining FIFO ke batch asal.
+    const fifoMovements = stockOutMovements.filter(m => m.batch_id);
+
+    for (const movement of fifoMovements) {
+      const batchId = movement.batch_id;
+      const returnQty = Number(movement.qty || 0);
+
+      if (!batchId || !returnQty) continue;
+
+      const batches = await sb.get(
+        "stock_batches",
+        `?select=*&id=eq.${batchId}&limit=1`
+      );
+
+      const batch = batches?.[0];
+      if (!batch) continue;
+
+      await sb.patch("stock_batches", batchId, {
+        qty_remaining: Number(batch.qty_remaining || 0) + returnQty,
+      });
+    }
+
+    // 4. Catat movement pembalik.
+    if (stockOutMovements.length > 0) {
+      const reverseRows = stockOutMovements.map(movement => ({
+        product_id: movement.product_id,
+        batch_id: movement.batch_id || null,
+        transaction_id: txn.id,
+        type: "ADJUSTMENT",
+        qty: Number(movement.qty || 0),
+        cost: Number(movement.cost || 0),
+        note: `Pembatalan transaksi TRX-${String(txn.id).slice(-4).padStart(4, "0")}`,
+      }));
+
+      await sb.post("stock_movements", reverseRows);
+    }
+
+    // 5. Tandai transaksi sebagai void.
     const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
       method: "PATCH",
       headers: {
@@ -6520,11 +6541,14 @@ const voidTransaction = async (txn, reason) => {
       )
     );
 
-    alert("Transaksi berhasil dibatalkan.");
+    await loadAll();
+
+    alert("Transaksi berhasil dibatalkan dan stok FIFO sudah dikembalikan.");
   } catch (err) {
     alert("Gagal membatalkan transaksi: " + err.message);
   }
 };
+
 const [settings, setSettings] = useState(defaultSettings);
 
 const rowsToSettings = (rows) => {
@@ -6599,22 +6623,24 @@ setVariants(
   total: Number(t.total || 0),
   cost: Number(t.cost || 0),
   profit: Number(t.profit || 0),
+  paid: Number(t.paid || 0),
+  change: Number(t.change || 0),
   payMethod: t.pay_method || t.payMethod || "-",
-      paymentDetails: t.payment_details || t.paymentDetails || "",
-      cashSessionId: t.cash_session_id || t.cashSessionId || null,
-      items: items
-        .filter(i => Number(i.transaction_id) === Number(t.id))
-        .map(i => ({
-          productId: i.product_id,
-          name: i.name,
-          qty: Number(i.qty || 0),
-          price: Number(i.price || 0),
-          discount: Number(i.discount || 0),
-          subtotal: Number(i.subtotal || 0),
-          stockQtyPerItem: Number(i.stock_qty_per_item || 1),
-          stockQtyTotal: Number(i.stock_qty_total || i.qty || 0),
-        })),
-    }));
+  paymentDetail: t.payment_detail || t.paymentDetail || t.pay_method || "-",
+  cashSessionId: t.cash_session_id || t.cashSessionId || null,
+  items: items
+    .filter(i => Number(i.transaction_id) === Number(t.id))
+    .map(i => ({
+      productId: i.product_id,
+      name: i.name,
+      qty: Number(i.qty || 0),
+      price: Number(i.price || 0),
+      discount: Number(i.discount || 0),
+      subtotal: Number(i.subtotal || 0),
+      stockQtyPerItem: Number(i.stock_qty_per_item || 1),
+      stockQtyTotal: Number(i.stock_qty_total || i.qty || 0),
+    })),
+}));
 
     setTransactions(txnsWithItems);
     setCashSessions(sessions || []);
@@ -6810,46 +6836,6 @@ const addCashMovement = async (type) => {
   const handleTransaction = useCallback(async (txn) => {
   showSync("saving");
 
-  const voidTransaction = async (txn, reason) => {
-  if (!txn || !txn.id) return;
-
-  try {
-    const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
-      method: "PATCH",
-      headers: {
-        ...HEADERS,
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify({
-        status: "void",
-        voided_at: new Date().toISOString(),
-        void_reason: reason || "Dibatalkan",
-      }),
-    });
-
-    if (!r.ok) {
-      throw new Error(await r.text());
-    }
-
-    setTransactions(prev =>
-      prev.map(t =>
-        Number(t.id) === Number(txn.id)
-          ? {
-              ...t,
-              status: "void",
-              voided_at: new Date().toISOString(),
-              void_reason: reason || "Dibatalkan",
-            }
-          : t
-      )
-    );
-
-    alert("Transaksi berhasil dibatalkan.");
-  } catch (err) {
-    alert("Gagal membatalkan transaksi: " + err.message);
-  }
-};
-
   let savedTxn = null;
 
   try {
@@ -6951,9 +6937,11 @@ const addCashMovement = async (type) => {
   total: txn.total,
   cost: totalCost,
   profit: finalProfit,
-  pay_method: txn.payMethod, 
+  pay_method: txn.payMethod,
   payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
   cash_session_id: txn.cashSessionId || txn.cash_session_id || cashSession?.id || null,
+  paid: Number(txn.paid || txn.cashReceived || txn.payment || 0),
+  change: Number(txn.change || 0),
 }]);
 
     // 3. Simpan detail item transaksi
