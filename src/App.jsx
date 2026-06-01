@@ -83,7 +83,7 @@ const buildThermalReceipt = (txn, settings) => {
   const note = settings?.receiptNote || settings?.receipt_footer || "Terima kasih sudah berbelanja!";
 
   const items = (txn.items || []).map(item => {
-    const name = String(item.name || "").slice(0, 28);
+    const name = String(item.name || "").toUpperCase().slice(0, 28);
     const qty = Number(item.qty || 0);
     const price = Number(item.price || 0);
     const subtotal = Number(item.subtotal || qty * price);
@@ -4467,7 +4467,10 @@ try {
             <hr className="receipt-divider" />
             {lastTxn.items.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>{item.name} x{item.qty}{item.discount ? ` (-${item.discount}%)` : ""}</span>
+                <span>
+  {String(item.name || "").toUpperCase()} x{item.qty}
+  {item.discount ? ` (-${item.discount}%)` : ""}
+</span>
                 <span>{fmt(item.subtotal)}</span>
               </div>
             ))}
@@ -6110,7 +6113,14 @@ const itemsSold = activeFiltered.reduce(
               <tbody>
                 {detail.items.map((item, i) => (
                   <tr key={i}>
-                    <td>{item.name}{item.discount > 0 && <span className="badge badge-orange" style={{ marginLeft: 6, fontSize: 10 }}>-{item.discount}%</span>}</td>
+                    <td>
+  {String(item.name || "").toUpperCase()}
+  {item.discount > 0 && (
+    <span className="badge badge-orange" style={{ marginLeft: 6, fontSize: 10 }}>
+      -{item.discount}%
+    </span>
+  )}
+</td>
                     <td>{item.qty}</td>
                     <td>{fmt(item.price)}</td>
                     <td style={{ fontWeight: 700 }}>{fmt(item.subtotal)}</td>
@@ -6751,15 +6761,19 @@ setVariants(
 );
 
   // 2. Load transaksi utama
-    const txns = await sb.get(
-      "transactions",
-      "?select=*&order=date.desc&limit=500"
-    );
+const txns = await sb.get(
+  "transactions",
+  "?select=*&order=date.desc&limit=500"
+);
 
-    const items = await sb.get(
+const transactionIds = txns.map(t => t.id).filter(Boolean);
+
+const items = transactionIds.length > 0
+  ? await sb.get(
       "transaction_items",
-      "?select=*&order=id.asc"
-    );
+      "?select=*&transaction_id=in.(" + transactionIds.join(",") + ")&order=id.asc"
+    )
+  : [];
 
     const sessions = await sb.get(
       "cash_sessions",
