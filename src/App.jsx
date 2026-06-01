@@ -6768,12 +6768,30 @@ const txns = await sb.get(
 
 const transactionIds = txns.map(t => t.id).filter(Boolean);
 
-const items = transactionIds.length > 0
-  ? await sb.get(
+const chunkArray = (arr, size) => {
+  const chunks = [];
+
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+
+  return chunks;
+};
+
+let items = [];
+
+if (transactionIds.length > 0) {
+  const idChunks = chunkArray(transactionIds, 100);
+
+  for (const idChunk of idChunks) {
+    const chunkItems = await sb.get(
       "transaction_items",
-      "?select=*&transaction_id=in.(" + transactionIds.join(",") + ")&order=id.asc"
-    )
-  : [];
+      "?select=*&transaction_id=in.(" + idChunk.join(",") + ")&order=id.asc"
+    );
+
+    items = [...items, ...(chunkItems || [])];
+  }
+}
 
     const sessions = await sb.get(
       "cash_sessions",
