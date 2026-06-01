@@ -3533,6 +3533,24 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
   </div>
 )}
 
+{fifoMismatchCount === 0 && fifoAuditRows.length > 0 && (
+  <div
+    className="card"
+    style={{
+      marginTop: 24,
+      marginBottom: 24,
+      padding: 14,
+      border: "1px solid rgba(30, 111, 92, 0.18)",
+      background: "rgba(30, 111, 92, 0.05)",
+      color: "var(--primary)",
+      fontSize: 13,
+      fontWeight: 800,
+    }}
+  >
+    ✅ Audit FIFO aman. Semua produk FIFO ON sudah cocok antara stok produk dan stock batches.
+  </div>
+)}
+
         <div className="dashboard-two-columns">        
         <div className="dashboard-two-columns">  
         <div className="card">
@@ -6527,30 +6545,33 @@ const defaultSettings = {
 };
 const activeTransactions = transactions.filter(t => t.status !== "void");
 const fifoAuditRows = useMemo(() => {
-  return products.map(product => {
-    const productId = Number(product.id);
+  return products
+    .filter(product => !!product.stock_management)
+    .map(product => {
+      const productId = Number(product.id);
 
-    const batchQty = stockBatches
-      .filter(batch => Number(batch.product_id) === productId)
-      .reduce((sum, batch) => sum + Number(batch.qty_remaining || 0), 0);
+      const batchQty = stockBatches
+        .filter(batch => Number(batch.product_id) === productId)
+        .reduce((sum, batch) => sum + Number(batch.qty_remaining || 0), 0);
 
-    const productStock = Number(product.stock || 0);
-    const diff = productStock - batchQty;
+      const productStock = Number(product.stock || 0);
+      const diff = productStock - batchQty;
 
-    return {
-      productId,
-      name: product.name,
-      category: product.category,
-      productStock,
-      batchQty,
-      diff,
-      status: diff === 0 ? "ok" : "mismatch",
-    };
-  });
+      return {
+        productId,
+        name: product.name,
+        category: product.category,
+        productStock,
+        batchQty,
+        diff,
+        status: diff === 0 ? "ok" : "mismatch",
+      };
+    });
 }, [products, stockBatches]);
 
-const fifoMismatchCount = fifoAuditRows.filter(row => row.status === "mismatch").length;
 const fifoMismatchRows = fifoAuditRows.filter(row => row.status === "mismatch");
+const fifoMismatchCount = fifoMismatchRows.length;
+
 const voidTransaction = async (txn, reason) => {
   if (!txn || !txn.id || txn.status === "void") return;
 
