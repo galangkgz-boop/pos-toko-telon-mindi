@@ -4370,6 +4370,11 @@ const paymentSuggestions = getPaymentSuggestions(total);
     return;
   }
 
+  if (payMethod === "Transfer" && !selectedBankAccount) {
+  alert("Pilih rekening tujuan transfer dulu.");
+  return;
+}
+
   if (payMethod === "Tunai" && (cash < total || !cashInput)) {
     alert("Uang diterima belum cukup.");
     return;
@@ -4425,11 +4430,6 @@ try {
   alert("Gagal menyimpan transaksi: " + err.message);
 }
   };
-
-  if (payMethod === "Transfer" && !selectedBankAccount) {
-  alert("Pilih rekening tujuan transfer dulu.");
-  return;
-}
 
   if (showSuccess && lastTxn) {
     return (
@@ -4777,21 +4777,23 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
             <div className="form-row">
               <label>Metode Pembayaran</label>
               <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                {["Tunai", "QRIS", "Transfer"].map(m => (
-                  <button key={m} className={`btn ${payMethod === m ? "btn-primary" : "btn-outline"}`} onClick={() => {
-  setPayMethod(m);
+                
+      {["Tunai", "QRIS", "Transfer"].map(m => (
+        <button
+          key={m}
+          type="button"
+          className={`btn ${payMethod === m ? "btn-primary" : "btn-outline"}`}
+          onClick={() => {
+            setPayMethod(m);
+            setSelectedBankAccount(null);
+          }}
+        >
+          {m}
+        </button>
+      ))}
+    </div>
+  </div>
 
-  if (m !== "Transfer") {
-    setSelectedBankAccount(null);
-  }
-
-  if (m === "Transfer" && !selectedBankAccount && bankAccounts.length > 0) {
-    setSelectedBankAccount(bankAccounts[0]);
-  }
-}}>{m}</button>
-                ))}
-              </div>
-            </div>
             {payMethod === "Tunai" && (
               <>
                 <div className="form-row">
@@ -4871,37 +4873,35 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
 )}
 
 {payMethod === "Transfer" && (
-  <div className="payment-info-box">
-    <div className="payment-info-title">Transfer Bank</div>
-    <div className="payment-info-subtitle">
-      Pilih salah satu rekening tujuan.
-    </div>
+  <div className="bank-account-list">
+    {bankAccounts.map(account => {
+      const isSelected =
+        selectedBankAccount?.bank === account.bank &&
+        selectedBankAccount?.number === account.number;
 
-    <div className="bank-list">
-        {bankAccounts.map(acc => (
+      return (
   <button
+    key={account.bank + account.number}
     type="button"
-    key={acc.bank + acc.number}
-    className={
-      selectedBankAccount?.number === acc.number
-        ? "bank-card bank-card-active"
-        : "bank-card"
-    }
-    onClick={() => setSelectedBankAccount(acc)}
+    className={isSelected ? "payment-chip active" : "payment-chip"}
+    style={{
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 2,
+      minWidth: 180,
+    }}
+    onClick={() => setSelectedBankAccount(account)}
   >
-          <div className="bank-logo">{acc.bank}</div>
-
-          <div className="bank-detail">
-            <div className="bank-number">{acc.number}</div>
-            <div className="bank-owner">a.n. {acc.name}</div>
-          </div>
-        </button>
-      ))}
+    <div style={{ fontWeight: 900 }}>
+      {account.bank} - {account.number}
     </div>
 
-    <div className="payment-total-note">
-      Total Tagihan: <strong>{fmt(total)}</strong>
+    <div style={{ fontSize: 12, marginTop: 3, opacity: 0.8 }}>
+      a.n. {account.name || "-"}
     </div>
+  </button>
+);
+    })}
   </div>
 )}
 
