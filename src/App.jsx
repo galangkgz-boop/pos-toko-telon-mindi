@@ -4409,9 +4409,13 @@ const paymentSuggestions = getPaymentSuggestions(total);
     txn.profit = txn.total - txn.cost;
 
 try {
-  await onTransaction(txn);
+  const savedTxn = await onTransaction(txn);
 
-  setLastTxn(txn);
+  if (!savedTxn) {
+    return;
+  }
+
+  setLastTxn(savedTxn);
   setCart([]);
   setDiscount(0);
   setCashInput("");
