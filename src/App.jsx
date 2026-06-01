@@ -6632,6 +6632,14 @@ const voidTransaction = async (txn, reason) => {
       await sb.patch("stock_batches", batchId, {
         qty_remaining: Number(batch.qty_remaining || 0) + returnQty,
       });
+      
+      setStockBatches(prev => 
+        prev.map(b =>
+          Number(b.id) === Number(batchId)
+            ? { ...b, qty_remaining: Number(b.qty_remaining || 0) + returnQty }
+            : b
+        )
+      );
     }
 
     // 4. Catat movement pembalik.
@@ -6680,7 +6688,8 @@ const voidTransaction = async (txn, reason) => {
       )
     );
 
-    await loadAll();
+    // Jangan loadAll langsung setelah void, supaya halaman tidak terasa refresh
+    // await loadAll();
 
     alert("Transaksi berhasil dibatalkan dan stok FIFO sudah dikembalikan.");
   } catch (err) {
@@ -7161,7 +7170,7 @@ const addCashMovement = async (type) => {
     // setStockBatches(batches || []);
     setTransactions(prev => [fullTxn, ...prev]);
 
-    await loadAll(); // reload untuk sinkronisasi penuh
+    // await loadAll();
 
     showSync("saved");
     return fullTxn;
