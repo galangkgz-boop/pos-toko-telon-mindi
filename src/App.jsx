@@ -7036,7 +7036,6 @@ const addCashMovement = async (type) => {
             `Stok FIFO tidak cukup untuk ${item.name}. Tersedia ${totalAvailable}, diminta ${qtySold}.`
           );
         }
-
         for (const batch of batches) {
           if (remainingQty <= 0) break;
 
@@ -7126,6 +7125,19 @@ const addCashMovement = async (type) => {
       });
     }
 
+    // Sinkronkan state stockBatches agar audit FIFO tiadk menampilkan selisih palsu
+    setStockBatches(prev =>
+      prev.map(batch => {
+        const update = batchUpdates.find
+        (u => Number(u.id) === Number(batch.id)
+      );
+
+        return update 
+        ? { ...batch, qty_remaining: Number(update.qty_remaining || 0) } 
+        : batch;
+      })
+    );
+
     // 5. Catat pergerakan stok keluar
     if (movementRows.length > 0) {
       const rowsWithTransaction = movementRows.map(row => ({
@@ -7161,6 +7173,27 @@ const addCashMovement = async (type) => {
   change: txn.change,
   items: processedItems,
 };
+
+if (batchUpdates.length > 0) {
+  setStockBatches(prev =>
+    prev.map(batch => {
+      const usedInThisBatch = batchUpdates
+        .filter(update => Number(update.batchId) === Number(batch.id))
+        .reduce((sum, update) => sum + Number(update.qty || 0), 0);
+
+      if (usedInThisBatch <= 0) return batch;
+
+      return {
+        ...batch,
+        qty_remaining: Math.max(
+          0,
+          Number(batch.qty_remaining || 0) - usedInThisBatch
+        ),
+      };
+    })
+  );
+}
+
     setProducts(prev =>
       prev.map(p => {
         const update = productStockUpdates.find(u => u.id === p.id);
