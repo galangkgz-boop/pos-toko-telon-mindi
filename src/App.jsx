@@ -4338,6 +4338,15 @@ const paymentSuggestions = getPaymentSuggestions(total);
   const change = cash - total;
 
   const handlePay = async () => {
+  const cashIsOpen =
+    cashSession &&
+    cashSession.id &&
+    String(cashSession.status || "").toLowerCase() !== "closed";
+
+  if (!cashIsOpen) {
+    alert("Kas awal belum dibuka. Isi Kas Awal dulu sebelum transaksi.");
+    return;
+  }
   if (isCashClosed) {
     setShowClosedAlert(true);
     return;
@@ -6945,6 +6954,16 @@ const addCashMovement = async (type) => {
 
   // ── Handle new transaction → save to Supabase
   const handleTransaction = useCallback(async (txn) => {
+  const cashIsOpen =
+    cashSession &&
+    cashSession.id &&
+    String(cashSession.status || "").toLowerCase() !== "closed";
+
+  if (!cashIsOpen) {
+    alert("Kas awal belum dibuka. Isi Kas Awal dulu sebelum transaksi.");
+    return null;
+  }
+
   showSync("saving");
 
   let savedTxn = null;
@@ -7041,18 +7060,18 @@ const addCashMovement = async (type) => {
 
     const finalProfit = Number(txn.total || 0) - totalCost;
     
-    [savedTxn] = await sb.post("transactions", [{
-  date: txn.date,
-  subtotal: Number(txn.subtotal || txn.total || 0),
-  discount_amount: Number(txn.discountAmount || txn.discount_amount || 0),
-  total: txn.total,
-  cost: totalCost,
-  profit: finalProfit,
-  pay_method: txn.payMethod,
-  payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
-  cash_session_id: txn.cashSessionId || txn.cash_session_id || cashSession?.id || null,
-  paid: Number(txn.paid || txn.cashReceived || txn.payment || 0),
-  change: Number(txn.change || 0),
+  [savedTxn] = await sb.post("transactions", [{
+    date: txn.date,
+    subtotal: Number(txn.subtotal || txn.total || 0),
+    discount_amount: Number(txn.discountAmount || txn.discount_amount || 0),
+    total: Number(txn.total || 0),
+    cost: Number(totalCost || 0),
+    profit: finalProfit,
+    pay_method: txn.payMethod,
+    payment_detail: txn.payment_detail || txn.paymentDetail || txn.payMethod,
+    cash_session_id: cashSession.id,
+    paid: Number(txn.paid || txn.cashReceived || txn.payment || 0),
+    change: Number(txn.change || 0),
 }]);
 
     // 3. Simpan detail item transaksi
@@ -7118,7 +7137,7 @@ const addCashMovement = async (type) => {
         return update ? { ...p, stock: update.stock } : p;
       })
     );
-
+    // setStockBatches(batches || []);
     setTransactions(prev => [fullTxn, ...prev]);
 
     await loadAll(); // reload untuk sinkronisasi penuh
@@ -7131,7 +7150,7 @@ const addCashMovement = async (type) => {
     alert("Gagal menyimpan transaksi: " + err.message);
     throw err;
   }
-}, [products]);
+}, [products, cashSession]);
 
   // ── Product CRUD wrappers with Supabase sync
   const setProductsWithSync = useCallback(async (updater) => {
