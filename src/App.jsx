@@ -5348,7 +5348,12 @@ function Products({ products, setProducts, transactions }) {
   const savingProductRef = useRef(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [restockProduct, setRestockProduct] = useState(null);
-  const [restockForm, setRestockForm] = useState({ qty: "", cost: "", });
+  const [restockForm, setRestockForm] = useState({
+  type: "tambah",
+  qty: "",
+  cost: "",
+  note: "",
+});
   const [savingRestock, setSavingRestock] = useState(false);
 
   const subMenus = [
@@ -5374,74 +5379,25 @@ function Products({ products, setProducts, transactions }) {
   };
 
   const openRestock = (product) => {
-  setRestockProduct(product);
-  setRestockForm({
-    qty: "",
-    cost: product.cost ? String(product.cost) : "",
-  });
-};
+    setRestockProduct(product);
+    setRestockForm({
+      type: "tambah",
+      qty: "",
+      cost: product.cost ? String(product.cost) : "",
+      note: "",
+    });
+  };
 
- const saveProduct = async () => {
-  if (savingProductRef.current) return;
-
-  savingProductRef.current = true;
-  setSavingProduct(true);
-
-  try {
-    const payload = {
-      name: form.name,
-      category: form.category,
-      price: Number(form.price || 0),
-      cost: Number(form.cost || 0),
-      stock: Number(form.stock || 0),
-      unit: form.unit || "pcs",
-      image: form.image || "🛍️",
-      discount: Number(form.discount || 0),
-      active: form.active !== false,
-      stock_management: form.stock_management || false,
-    };
-
-    if (editProduct) {
-      const [updatedProduct] = await sb.patch("products", editProduct.id, payload);
-
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === editProduct.id ? { ...p, ...updatedProduct } : p
-        )
-      );
-    } else {
-
-const [newProduct] = await sb.post("products", [payload]);
-
-setProducts(prev => {
-  const exists = prev.some(p => Number(p.id) === Number(newProduct.id));
-  return exists ? prev : [...prev, newProduct];
-});
-
-      setProducts(prev => {
-        const exists = prev.some(p => Number(p.id) === Number(newProduct.id));
-        return exists ? prev : [...prev, newProduct];
-      });
-    }
-
-    setShowModal(false);
-    setEditProduct(null);
-  } catch (err) {
-    alert("Gagal menyimpan produk: " + err.message);
-  } finally {
-    savingProductRef.current = false;
-    setSavingProduct(false);
-  }
-};
-
-const saveRestock = async () => {
+ const saveRestock = async () => {
   if (!restockProduct || savingRestock) return;
 
-  const qtyIn = Number(restockForm.qty || 0);
-  const cost = Number(restockForm.cost || 0);
+  const type = restockForm.type || "tambah";
+  const qty = Number(restockForm.qty || 0);
+  const cost = Number(restockForm.cost || restockProduct.cost || 0);
+  const note = restockForm.note || "";
 
-  if (qtyIn <= 0) {
-    alert("Qty restock harus lebih dari 0.");
+  if (qty <= 0) {
+    alert("Jumlah stok harus lebih dari 0.");
     return;
   }
 
@@ -5454,43 +5410,164 @@ const saveRestock = async () => {
 
   try {
     const currentStock = Number(restockProduct.stock || 0);
-    const nextStock = currentStock + qtyIn;
 
-    const [updatedProduct] = await sb.patch("products", restockProduct.id, {
-      stock: nextStock,
-      cost,
-      stock_management: true,
-    });
+    if (type === "kurang" && qty > currentStock) {
+      throw new Error(
+        "Jumlah koreksi lebih besar dari stok produk. Stok sekarang " +
+          currentStock +
+          "."
+      );
+    }
 
-    await sb.post("stock_batches", [
-      {
-        product_id: restockProduct.id,
-        qty_in: qtyIn,
-        qty_remaining: qtyIn,
-        cost,
-      },
-    ]);
+    const nextStock =
+      type === "tambah"
+        ? currentStock + qty
+        : Math.max(0, currentStock - qty);
 
-    setProducts(prev =>
-      prev.map(p =>
-        Number(p.id) === Number(restockProduct.id)
-          ? {
-              ...p,
-              ...updatedProduct,
-              stock: nextStock,
-              cost,
-              stock_management: true,
-            }
-          : p
-      )
-    );
+    if (type === "tambah") {
+      const [updatedProduct] = await sb.patch("products", restockProduct.id, {
+        stock: nextStock,
+        cost: cost,
+        stock_management: true,
+      });
+
+      await sb.post("stock_batches", [
+        {
+          product_id: restockProduct.id,
+          qty_in: qty,
+          qty_remaining: qty,
+          cost: cost,
+          received_at: new Date().toISOString(),
+        },
+      ]);
+
+      await sb.post("stock_movements", [
+        {
+          product_id: restockProduct.id,
+          batch_id: null,
+          type: "IN",
+          qty: qty,
+          cost: cost,
+          note: note || "Restock barang masuk",
+        },
+      ]);
+
+      setProducts(prev =>
+        prev.map(p =>
+          Number(p.id) === Number(restockProduct.id)
+            ? {
+                ...p,
+                ...updatedProduct,
+                stock: nextStock,
+                cost: cost,
+                stock_management: true,
+              }
+            : p
+        )
+      );
+    }
+
+    if (type === "kurang") {
+      if (restockProduct.stock_management) {
+        const batches = await sb.get(
+          "stock_batches",
+          "?select=*&product_id=eq." +
+            restockProduct.id +
+            "&qty_remaining=gt.0&order=received_at.asc&order=id.asc"
+        );
+
+        const totalAvailable = batches.reduce(
+          (sum, batch) => sum + Number(batch.qty_remaining || 0),
+          0
+        );
+
+        if (totalAvailable < qty) {
+          throw new Error(
+            "Stok FIFO tidak cukup. Tersedia " +
+              totalAvailable +
+              ", dikurangi " +
+              qty +
+              "."
+          );
+        }
+
+        let remainingQty = qty;
+        const movementRows = [];
+
+        for (const batch of batches) {
+          if (remainingQty <= 0) break;
+
+          const batchRemaining = Number(batch.qty_remaining || 0);
+          const takeQty = Math.min(remainingQty, batchRemaining);
+          const nextRemaining = batchRemaining - takeQty;
+          const batchCost = Number(batch.cost || cost || 0);
+
+          await sb.patch("stock_batches", batch.id, {
+            qty_remaining: nextRemaining,
+          });
+
+          movementRows.push({
+            product_id: restockProduct.id,
+            batch_id: batch.id,
+            type: "ADJUSTMENT",
+            qty: -takeQty,
+            cost: batchCost,
+            note: note || "Koreksi stok keluar",
+          });
+
+          remainingQty -= takeQty;
+        }
+
+        if (movementRows.length > 0) {
+          await sb.post("stock_movements", movementRows);
+        }
+      } else {
+        await sb.post("stock_movements", [
+          {
+            product_id: restockProduct.id,
+            batch_id: null,
+            type: "ADJUSTMENT",
+            qty: -qty,
+            cost: cost,
+            note: note || "Koreksi stok keluar",
+          },
+        ]);
+      }
+
+      const [updatedProduct] = await sb.patch("products", restockProduct.id, {
+        stock: nextStock,
+        cost: cost,
+      });
+
+      setProducts(prev =>
+        prev.map(p =>
+          Number(p.id) === Number(restockProduct.id)
+            ? {
+                ...p,
+                ...updatedProduct,
+                stock: nextStock,
+                cost: cost,
+              }
+            : p
+        )
+      );
+    }
 
     setRestockProduct(null);
-    setRestockForm({ qty: "", cost: "" });
+    setRestockForm({
+      type: "tambah",
+      qty: "",
+      cost: "",
+      note: "",
+    });
 
-    alert("Restock berhasil disimpan.");
+    alert(
+      type === "tambah"
+        ? "Restock berhasil disimpan."
+        : "Koreksi stok berhasil disimpan."
+    );
   } catch (err) {
-    alert("Gagal restock: " + err.message);
+    alert("Gagal menyimpan stok: " + err.message);
   } finally {
     setSavingRestock(false);
   }
@@ -5734,7 +5811,7 @@ const toggleStockManagement = async (id) => {
   className="btn btn-sm btn-outline"
   onClick={() => openRestock(p)}
 >
-  Restock
+  Kelola Stok
 </button>
                           <button className="btn-icon" onClick={() => openEdit(p)}><Icon name="edit" size={14} /></button>
                           <button className="btn-icon" onClick={() => deleteProduct(p.id)} style={{ color: "var(--danger)" }}><Icon name="trash" size={14} /></button>
@@ -5987,7 +6064,7 @@ const toggleStockManagement = async (id) => {
         <div className="modal">
         <div className="modal-header">
         <div>
-          <h3>Restock Produk</h3>
+          <h3>Kelola Stok Produk</h3>
           <p>{restockProduct.name}</p>
         </div>
 
@@ -6010,7 +6087,48 @@ const toggleStockManagement = async (id) => {
       </div>
 
       <div className="form-row">
-        <label>Qty Masuk</label>
+  <label>Jenis Penyesuaian</label>
+  <div style={{ display: "flex", gap: 8 }}>
+    <button
+      type="button"
+      className={
+        restockForm.type === "tambah"
+          ? "btn btn-primary"
+          : "btn btn-outline"
+      }
+      onClick={() =>
+        setRestockForm(prev => ({
+          ...prev,
+          type: "tambah",
+        }))
+      }
+    >
+      + Stok Masuk
+    </button>
+
+    <button
+      type="button"
+      className={
+        restockForm.type === "kurang"
+          ? "btn btn-danger"
+          : "btn btn-outline"
+      }
+      onClick={() =>
+        setRestockForm(prev => ({
+          ...prev,
+          type: "kurang",
+        }))
+      }
+    >
+      - Koreksi Kurang
+    </button>
+  </div>
+</div>
+
+      <div className="form-row">
+        <label>
+  {restockForm.type === "tambah" ? "Qty Masuk" : "Qty Dikurangi"}
+</label>
         <input
           className="input"
           type="number"
@@ -6041,6 +6159,25 @@ const toggleStockManagement = async (id) => {
         />
       </div>
 
+      <div className="form-row">
+  <label>Keterangan</label>
+  <input
+    className="input"
+    value={restockForm.note || ""}
+    onChange={e =>
+      setRestockForm(prev => ({
+        ...prev,
+        note: e.target.value,
+      }))
+    }
+    placeholder={
+      restockForm.type === "tambah"
+        ? "Contoh: restock dari supplier"
+        : "Contoh: barang rusak / hilang / opname"
+    }
+  />
+</div>
+
       <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
         <button
           type="button"
@@ -6058,7 +6195,11 @@ const toggleStockManagement = async (id) => {
           onClick={saveRestock}
           disabled={savingRestock}
         >
-          {savingRestock ? "Menyimpan..." : "Simpan Restock"}
+          {savingRestock
+  ? "Menyimpan..."
+  : restockForm.type === "tambah"
+  ? "Simpan Restock"
+  : "Simpan Koreksi"}
         </button>
       </div>
     </div>
