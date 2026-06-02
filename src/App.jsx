@@ -75,11 +75,55 @@ const fmt = (n) => "Rp " + n.toLocaleString("id-ID");
 const fmtDate = (iso) => new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
+const RECEIPT_STORE_LINES = [
+  "AGEN SOSIS DAN ES KRISTAL",
+  "TOKO TELON MINDI",
+];
+
+const wrapReceiptText = (text, maxLength = 32) => {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach(word => {
+    const nextLine = currentLine ? currentLine + " " + word : word;
+
+    if (nextLine.length > maxLength) {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = nextLine;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+
+  return lines;
+};
+
+const getReceiptHeaderLines = (settings) => {
+  const address = String(
+    settings?.address ||
+    settings?.store_address ||
+    "JALAN RAYA SUGIHWARAS NO. 742"
+  ).toUpperCase();
+
+  const phone = String(
+    settings?.phone ||
+    settings?.store_phone ||
+    "085888100995"
+  );
+
+  return [
+    ...RECEIPT_STORE_LINES,
+    ...wrapReceiptText(address, 32),
+    phone,
+  ].filter(Boolean);
+};
+
 const buildThermalReceipt = (txn, settings) => {
   const line = "--------------------------------\n";
-  const storeName = settings?.storeName || settings?.store_name || "Toko Telon Mindi";
-  const address = settings?.address || settings?.store_address || "";
-  const phone = settings?.phone || settings?.store_phone || "";
+  const receiptHeader = getReceiptHeaderLines(settings);
   const note = settings?.receiptNote || settings?.receipt_footer || "Terima kasih sudah berbelanja!";
 
   const items = (txn.items || []).map(item => {
@@ -103,9 +147,7 @@ const receiptDiscount = Number(txn.discountAmount || txn.discount_amount || 0);
   return [
   "\x1B\x40",
   "\x1B\x61\x01",
-  String(storeName || "TOKO TELON MINDI").toUpperCase() + "\n",
-  address ? address + "\n" : "",
-  phone ? "WA: " + phone + "\n" : "",
+  ...receiptHeader.map(line => line + "\n").join(""),
     "\x1B\x61\x00",
     line,
     "TRX-" + String(txn.id).slice(-4).padStart(4, "0") + "\n",
@@ -4148,6 +4190,7 @@ function Cashier({ products, onTransaction, settings, variants, cashSession, }) 
   const [catFilter, setCatFilter] = useState("Semua");
   const [selectedBankAccount, setSelectedBankAccount] = useState(null);
   const [showClosedAlert, setShowClosedAlert] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const isCashClosed = String(cashSession?.status || "").toLowerCase() === "closed";
 
@@ -4356,19 +4399,26 @@ const paymentSuggestions = getPaymentSuggestions(total);
   const change = cash - total;
 
   const handlePay = async () => {
-  const cashIsOpen =
-    cashSession &&
-    cashSession.id &&
-    String(cashSession.status || "").toLowerCase() !== "closed";
+    if (isPaying) return;
 
-  if (!cashIsOpen) {
-    alert("Kas awal belum dibuka. Isi Kas Awal dulu sebelum transaksi.");
-    return;
-  }
-  if (isCashClosed) {
-    setShowClosedAlert(true);
-    return;
-  }
+    if (cart.length === 0) {
+      alert("Keranjang kosong. Tambahkan produk sebelum bayar.");
+      return;
+    }
+
+    const cashIsOpen =
+      cashSession &&
+      cashSession.id &&
+      String(cashSession.status || "").toLowerCase() !== "closed";
+
+    if (!cashIsOpen) {
+      alert("Kas awal belum dibuka. Isi Kas Awal dulu sebelum transaksi.");
+      return;
+    }
+    if (isCashClosed) {
+      setShowClosedAlert(true);
+      return;
+    }
 
   if (payMethod === "Transfer" && !selectedBankAccount) {
   alert("Pilih rekening tujuan transfer dulu.");
@@ -4414,6 +4464,8 @@ const paymentSuggestions = getPaymentSuggestions(total);
     txn.profit = txn.total - txn.cost;
 
 try {
+  setIsPaying(true);
+
   const savedTxn = await onTransaction(txn);
 
   if (!savedTxn) {
@@ -4428,8 +4480,9 @@ try {
   setShowSuccess(true);
 } catch (err) {
   alert("Gagal menyimpan transaksi: " + err.message);
-}
-  };
+} finally {
+  setIsPaying(false);
+}};
 
   if (showSuccess && lastTxn) {
     return (
@@ -4443,21 +4496,18 @@ try {
          <div id="receipt-print" className="receipt receipt-print">
             <div style={{ textAlign: "center", marginBottom: 8, lineHeight: 1.35 }}>
  
-  <div style={{ fontWeight: 800, fontSize: 13 }}>
-  {String(settings?.storeName || settings?.store_name || "TOKO TELON MINDI").toUpperCase()}
-</div>
-
-  {settings?.store_address && (
-    <>
-      <span style={{ fontSize: 11 }}>{settings.store_address}</span><br />
-    </>
-  )}
-
-  {settings?.store_phone && (
-    <>
-      <span style={{ fontSize: 11 }}>WA: {settings.store_phone}</span><br />
-    </>
-  )}
+  {getReceiptHeaderLines(settings).map((line, index) => (
+  <div
+    key={index}
+    style={{
+      fontWeight: index < 2 ? 900 : 700,
+      fontSize: index < 2 ? 13 : 11,
+      textTransform: "uppercase",
+    }}
+  >
+    {line}
+  </div>
+))}
 
   <span style={{ fontSize: 11 }}>
     {fmtDate(lastTxn.date)} {fmtTime(lastTxn.date)}
@@ -4905,20 +4955,21 @@ const availableStock = Math.max(0, Number(p.stock || 0) - usedStockQty);
   </div>
 )}
 
-            <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
-              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPayModal(false)}>Batal</button>
-              <button
-  type="button"
-  className="btn btn-primary"
-  style={{ flex: 1 }}
-  onClick={handlePay}
->
-  <Icon name="check" /> Bayar
-</button>
-            </div>
-          </div>
-        </div>
-      )}
+<div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPayModal(false)}>Batal</button>
+  <button
+    type="button"
+    className="btn btn-primary"
+    style={{ flex: 1 }}
+    disabled={isPaying}
+    onClick={handlePay}
+  >
+    <Icon name="check" /> {isPaying ? "Menyimpan..." : "Bayar"}
+  </button>
+</div>
+</div>
+</div>
+)}
 
       {showClosedAlert && (
   <div className="mini-alert-backdrop">
