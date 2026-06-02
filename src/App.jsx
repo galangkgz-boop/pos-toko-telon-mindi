@@ -2838,6 +2838,8 @@ function Dashboard({
   fifoAuditRows = [],
   fifoMismatchCount = 0,
   fifoMismatchRows = [],
+  stockOpnames = [],
+  setStockOpnames,
 }) {
   const today = new Date();
 
@@ -3009,22 +3011,26 @@ const saveOpname = async () => {
   try {
     setSavingOpname(true);
 
-    await sb.post("stock_opnames", [
-      {
-        product_id: opnameModal.productId,
-        product_name: opnameModal.name,
-        category: opnameModal.category || "",
-        system_stock: Number(opnameModal.productStock || 0),
-        fifo_stock: Number(opnameModal.batchQty || 0),
-        physical_stock: physicalStock,
-        system_difference: Number(opnameModal.diff || 0),
-        physical_difference:
-          physicalStock - Number(opnameModal.productStock || 0),
-        reason: opnameForm.reason || "Koreksi opname",
-        note: opnameForm.note || "",
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    const [savedOpname] = await sb.post("stock_opnames", [
+  {
+    product_id: opnameModal.productId,
+    product_name: opnameModal.name,
+    category: opnameModal.category || "",
+    system_stock: Number(opnameModal.productStock || 0),
+    fifo_stock: Number(opnameModal.batchQty || 0),
+    physical_stock: physicalStock,
+    system_difference: Number(opnameModal.diff || 0),
+    physical_difference:
+      physicalStock - Number(opnameModal.productStock || 0),
+    reason: opnameForm.reason || "Koreksi opname",
+    note: opnameForm.note || "",
+    created_at: new Date().toISOString(),
+  },
+]);
+
+if (savedOpname) {
+  setStockOpnames(prev => [savedOpname, ...prev]);
+}
 
     alert("Catatan opname berhasil disimpan. Stok belum diubah.");
 
@@ -3638,37 +3644,61 @@ const physicalDifference =
           </tr>
         </thead>
         <tbody>
-          {fifoMismatchRows.slice(0, 5).map(row => (
-            <tr key={row.productId}>
-              <td>
-                <strong>{row.name}</strong>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {row.category || "-"}
-                </div>
-              </td>
-              <td style={{ textAlign: "right" }}>{row.productStock}</td>
-              <td style={{ textAlign: "right" }}>{row.batchQty}</td>
-              <td
-                style={{
-                  textAlign: "right",
-                  color: row.diff > 0 ? "var(--danger)" : "var(--primary)",
-                  fontWeight: 900,
-                }}
-              >
-                {row.diff}
-              </td>
+          {fifoMismatchRows.slice(0, 5).map(row => {
+  const lastOpname = (stockOpnames || []).find(
+    opname => Number(opname.product_id) === Number(row.productId)
+  );
 
-              <td style={{ textAlign: "center" }}>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
-                  onClick={() => openOpnameModal(row)}
-                >
-                  Catat Opname
-                </button>
-              </td>
-            </tr>
-          ))}
+  return (
+    <tr key={row.productId}>
+      <td>
+        <strong>{row.name}</strong>
+
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          {row.category || "-"}
+        </div>
+
+        {lastOpname && (
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 11,
+              color: "var(--primary)",
+              fontWeight: 800,
+            }}
+          >
+            Opname terakhir: fisik {lastOpname.physical_stock} ·{" "}
+            {lastOpname.reason || "-"}
+          </div>
+        )}
+      </td>
+
+      <td style={{ textAlign: "right" }}>{row.productStock}</td>
+
+      <td style={{ textAlign: "right" }}>{row.batchQty}</td>
+
+      <td
+        style={{
+          textAlign: "right",
+          color: row.diff > 0 ? "var(--danger)" : "var(--primary)",
+          fontWeight: 900,
+        }}
+      >
+        {row.diff}
+      </td>
+
+      <td style={{ textAlign: "center" }}>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => openOpnameModal(row)}
+        >
+          Catat Opname
+        </button>
+      </td>
+    </tr>
+  );
+})}
         </tbody>
       </table>
     </div>
@@ -6910,6 +6940,7 @@ export default function App() {
   const [showCloseCash, setShowCloseCash] = useState(false);
   const [closingCashInput, setClosingCashInput] = useState("");
   const [stockBatches, setStockBatches] = useState([]);
+  const [stockOpnames, setStockOpnames] = useState([]);
 
 const defaultSettings = {
   store_name: "Agen Sosis & Es Kristal Toko Telon Mindi",
@@ -7105,6 +7136,8 @@ const rowsToSettings = (rows) => {
     setProducts(prods);
     const batches = await sb.get("stock_batches", "?select=*&order=created_at.asc");
     setStockBatches(batches || []);
+    const opnameRows = await sb.get("stock_opnames", "?select=*&order=created_at.desc&limit=100");
+    setStockOpnames(opnameRows || []);
 
     const variantRows = await sb.get(
   "product_variants",
@@ -7848,6 +7881,8 @@ const topbarItemsToday = topbarTodayTxns.reduce(
     fifoAuditRows={fifoAuditRows}
     fifoMismatchCount={fifoMismatchCount}
     fifoMismatchRows={fifoMismatchRows}
+    stockOpnames={stockOpnames}
+    setStockOpnames={setStockOpnames}
   />
 )}
             {page === "cashier" && (
