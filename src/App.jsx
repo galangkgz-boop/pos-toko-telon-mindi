@@ -2847,6 +2847,7 @@ function Dashboard({
     reason: "Koreksi Opname",
     note: "",
   });
+  const [savingOpname, setSavingOpname] = useState(false);
   
   const activeTransactions = transactions.filter(t => t.status !== "void");
   const todayStr = today.toDateString();
@@ -2986,6 +2987,53 @@ const closeOpnameModal = () => {
     reason: "Koreksi opname",
     note: "",
   });
+};
+
+const saveOpname = async () => {
+  if (!opnameModal) return;
+
+  const physicalStock = Number(
+    String(opnameForm.physicalStock || "").replace(/\D/g, "")
+  );
+
+  if (opnameForm.physicalStock === "") {
+    alert("Isi stok fisik sebenarnya dulu.");
+    return;
+  }
+
+  if (physicalStock < 0) {
+    alert("Stok fisik tidak boleh minus.");
+    return;
+  }
+
+  try {
+    setSavingOpname(true);
+
+    await sb.post("stock_opnames", [
+      {
+        product_id: opnameModal.productId,
+        product_name: opnameModal.name,
+        category: opnameModal.category || "",
+        system_stock: Number(opnameModal.productStock || 0),
+        fifo_stock: Number(opnameModal.batchQty || 0),
+        physical_stock: physicalStock,
+        system_difference: Number(opnameModal.diff || 0),
+        physical_difference:
+          physicalStock - Number(opnameModal.productStock || 0),
+        reason: opnameForm.reason || "Koreksi opname",
+        note: opnameForm.note || "",
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    alert("Catatan opname berhasil disimpan. Stok belum diubah.");
+
+    closeOpnameModal();
+  } catch (err) {
+    alert("Gagal menyimpan opname: " + err.message);
+  } finally {
+    setSavingOpname(false);
+  }
 };
 
 const physicalStockValue =
@@ -3697,7 +3745,7 @@ const physicalDifference =
             textAlign: "center",
           }}
         >
-          Form investigasi saja. Belum mengubah stok atau database.
+          Form ini hanya menyimpan catatan opname. Belum mengubah stok produk atau batch FIFO.
         </p>
       </div>
 
@@ -3817,7 +3865,7 @@ const physicalDifference =
             </span>
           </div>
           <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            Catatan ini belum disimpan. Tahap berikutnya baru kita buat tabel opname dan tombol simpan.
+            Catatan ini akan disimpan sebagai riwayat opname. Stok belum dikoreksi otomatis.
           </div>
         </div>
       )}
@@ -3841,15 +3889,14 @@ const physicalDifference =
         </button>
 
         <button
-          type="button"
-          className="btn btn-primary"
-          style={{ flex: 1 }}
-          onClick={() => {
-            alert("Tahap ini hanya preview opname. Belum menyimpan atau mengubah stok.");
-          }}
-        >
-          Preview Saja
-        </button>
+  type="button"
+  className="btn btn-primary"
+  style={{ flex: 1 }}
+  disabled={savingOpname}
+  onClick={saveOpname}
+>
+  {savingOpname ? "Menyimpan..." : "Simpan Opname"}
+</button>
       </div>
     </div>
   </div>
