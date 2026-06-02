@@ -5852,7 +5852,13 @@ const toggleStockManagement = async (id) => {
                       </span>
                     </td>
                     <td>
-                      <button className="btn btn-sm btn-outline" onClick={() => setStockModal(p)}>Sesuaikan</button>
+                      <button
+  type="button"
+  className="btn btn-sm btn-outline"
+  onClick={() => openRestock(p)}
+>
+  Kelola Stok
+</button>
                     </td>
                   </tr>
                 ))}
@@ -6206,7 +6212,7 @@ const toggleStockManagement = async (id) => {
   </div>
 )}
 
-      {stockModal && (
+      {false && stockModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-title">📦 Sesuaikan Stok — {stockModal.name}</div>
