@@ -2840,6 +2840,14 @@ function Dashboard({
   fifoMismatchRows = [],
 }) {
   const today = new Date();
+
+  const [opnameModal, setOpnameModal] = useState(false);
+  const [opnameForm, setOpnameForm] = useState({
+    physicalStock: "",
+    reason: "Koreksi Opname",
+    note: "",
+  });
+  
   const activeTransactions = transactions.filter(t => t.status !== "void");
   const todayStr = today.toDateString();
 
@@ -2962,7 +2970,34 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
 
   const lowStock = products.filter(p => p.stock <= 10 && p.active);
   const recentTxns = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  const openOpnameModal = (row) => {
+  setOpnameModal(row);
+  setOpnameForm({
+    physicalStock: "",
+    reason: "Koreksi opname",
+    note: "",
+  });
+};
 
+const closeOpnameModal = () => {
+  setOpnameModal(null);
+  setOpnameForm({
+    physicalStock: "",
+    reason: "Koreksi opname",
+    note: "",
+  });
+};
+
+const physicalStockValue =
+  opnameForm.physicalStock === ""
+    ? null
+    : Number(String(opnameForm.physicalStock || "").replace(/\D/g, ""));
+
+const physicalDifference =
+  opnameModal && physicalStockValue !== null
+    ? physicalStockValue - Number(opnameModal.productStock || 0)
+    : 0;
+    
   return (
     <div>
 
@@ -3531,6 +3566,18 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
       Detail Selisih FIFO
     </div>
 
+    <div
+      style={{
+        fontSize: 12,
+        color: "var(--text-muted)",
+        lineHeight: 1.6,
+        marginBottom: 12,
+      }}
+    >
+      Selisih ini berarti stok produk dan total batch FIFO tidak sama.
+      Jangan langsung disamakan sebelum cek fisik barang dan penyebabnya.
+    </div>
+
     <div className="table-wrap">
       <table>
         <thead>
@@ -3539,6 +3586,7 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
             <th style={{ textAlign: "right" }}>Stok Produk</th>
             <th style={{ textAlign: "right" }}>Stok FIFO</th>
             <th style={{ textAlign: "right" }}>Selisih</th>
+            <th style={{ textAlign: "center" }}>Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -3561,18 +3609,28 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
               >
                 {row.diff}
               </td>
+
+              <td style={{ textAlign: "center" }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => openOpnameModal(row)}
+                >
+                  Catat Opname
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
 
-    {fifoMismatchRows.length > 5 && (
-      <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
-        Menampilkan 5 dari {fifoMismatchRows.length} produk selisih.
-      </div>
-    )}
+{fifoMismatchRows.length > 5 && (
+  <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
+    Menampilkan 5 dari {fifoMismatchRows.length} produk selisih.
   </div>
+)}
+</div>
 )}
 
 {fifoMismatchCount === 0 && fifoAuditRows.length > 0 && (
@@ -3590,6 +3648,210 @@ const cashDifference = closingCashInput === "" ? 0 : closingCashValue - cashBala
     }}
   >
     ✅ Audit FIFO aman. Semua produk FIFO ON sudah cocok antara stok produk dan stock batches.
+  </div>
+)}
+
+{opnameModal && (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div
+        style={{
+          position: "relative",
+          textAlign: "center",
+          padding: "0 52px",
+          marginBottom: 16,
+        }}
+      >
+        <button
+          type="button"
+          className="modal-close-btn"
+          onClick={closeOpnameModal}
+          aria-label="Tutup"
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            zIndex: 10,
+          }}
+        >
+          ×
+        </button>
+
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            textAlign: "center",
+          }}
+        >
+          Catat Opname FIFO
+        </h3>
+
+        <p
+          style={{
+            margin: "6px 0 0",
+            color: "var(--text-muted)",
+            fontSize: 13,
+            fontWeight: 700,
+            textAlign: "center",
+          }}
+        >
+          Form investigasi saja. Belum mengubah stok atau database.
+        </p>
+      </div>
+
+      <div
+        style={{
+          padding: 12,
+          borderRadius: 12,
+          background: "var(--bg)",
+          marginBottom: 14,
+          fontSize: 13,
+          lineHeight: 1.8,
+        }}
+      >
+        <div>
+          <strong>Produk:</strong> {opnameModal.name}
+        </div>
+        <div>
+          <strong>Kategori:</strong> {opnameModal.category || "-"}
+        </div>
+        <div>
+          <strong>Stok Produk:</strong> {opnameModal.productStock}
+        </div>
+        <div>
+          <strong>Stok FIFO:</strong> {opnameModal.batchQty}
+        </div>
+        <div>
+          <strong>Selisih Sistem:</strong>{" "}
+          <span
+            style={{
+              color: opnameModal.diff > 0 ? "var(--danger)" : "var(--primary)",
+              fontWeight: 900,
+            }}
+          >
+            {opnameModal.diff}
+          </span>
+        </div>
+      </div>
+
+      <div className="form-row">
+        <label>Stok Fisik Sebenarnya</label>
+        <input
+          className="input"
+          type="text"
+          inputMode="numeric"
+          value={opnameForm.physicalStock}
+          onChange={e => {
+            const cleanValue = e.target.value.replace(/\D/g, "");
+            setOpnameForm(prev => ({
+              ...prev,
+              physicalStock: cleanValue,
+            }));
+          }}
+          placeholder="Contoh: 10"
+        />
+      </div>
+
+      <div className="form-row">
+        <label>Alasan Selisih</label>
+        <select
+          className="input"
+          value={opnameForm.reason}
+          onChange={e =>
+            setOpnameForm(prev => ({
+              ...prev,
+              reason: e.target.value,
+            }))
+          }
+        >
+          <option>Koreksi opname</option>
+          <option>Salah input kasir</option>
+          <option>Barang rusak</option>
+          <option>Barang hilang</option>
+          <option>Restock belum sesuai</option>
+          <option>Lainnya</option>
+        </select>
+      </div>
+
+      <div className="form-row">
+        <label>Catatan</label>
+        <textarea
+          className="input"
+          rows={3}
+          value={opnameForm.note}
+          onChange={e =>
+            setOpnameForm(prev => ({
+              ...prev,
+              note: e.target.value,
+            }))
+          }
+          placeholder="Contoh: fisik dihitung ulang oleh kasir malam"
+        />
+      </div>
+
+      {physicalStockValue !== null && (
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            background: "rgba(30, 111, 92, 0.07)",
+            marginTop: 12,
+            fontSize: 13,
+            lineHeight: 1.8,
+          }}
+        >
+          <div>
+            <strong>Stok fisik:</strong> {physicalStockValue}
+          </div>
+          <div>
+            <strong>Selisih fisik vs stok produk:</strong>{" "}
+            <span
+              style={{
+                color: physicalDifference < 0 ? "var(--danger)" : "var(--primary)",
+                fontWeight: 900,
+              }}
+            >
+              {physicalDifference}
+            </span>
+          </div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            Catatan ini belum disimpan. Tahap berikutnya baru kita buat tabel opname dan tombol simpan.
+          </div>
+        </div>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          marginTop: 16,
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ flex: 1 }}
+          onClick={closeOpnameModal}
+        >
+          Tutup
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ flex: 1 }}
+          onClick={() => {
+            alert("Tahap ini hanya preview opname. Belum menyimpan atau mengubah stok.");
+          }}
+        >
+          Preview Saja
+        </button>
+      </div>
+    </div>
   </div>
 )}
 
