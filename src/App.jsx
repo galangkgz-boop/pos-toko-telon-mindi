@@ -5586,14 +5586,59 @@ const toggleStockManagement = async (id) => {
     // untuk sementara hanya catat adjustment.
     // FIFO keluar saat penjualan akan kita buat di langkah berikutnya.
     if (stockModal.stock_management && stockAdj.type === "kurang") {
-      await sb.post("stock_movements", {
-        product_id: stockModal.id,
-        type: "ADJUSTMENT",
-        qty: -qty,
-        cost: cost,
-        note: stockAdj.note || "Koreksi stok FIFO manual",
-      });
-    }
+  const batches = await sb.get(
+    "stock_batches",
+    "?select=*&product_id=eq." +
+      stockModal.id +
+      "&qty_remaining=gt.0&order=received_at.asc&order=id.asc"
+  );
+
+  const totalAvailable = batches.reduce(
+    (sum, batch) => sum + Number(batch.qty_remaining || 0),
+    0
+  );
+
+  if (totalAvailable < qty) {
+    throw new Error(
+      "Stok FIFO tidak cukup. Tersedia " +
+        totalAvailable +
+        ", dikurangi " +
+        qty +
+        "."
+    );
+  }
+
+  let remainingQty = qty;
+  const movementRows = [];
+
+  for (const batch of batches) {
+    if (remainingQty <= 0) break;
+
+    const batchRemaining = Number(batch.qty_remaining || 0);
+    const takeQty = Math.min(remainingQty, batchRemaining);
+    const nextRemaining = batchRemaining - takeQty;
+    const batchCost = Number(batch.cost || cost || 0);
+
+    await sb.patch("stock_batches", batch.id, {
+      qty_remaining: nextRemaining,
+    });
+
+    movementRows.push({
+      product_id: stockModal.id,
+      batch_id: batch.id,
+      type: "ADJUSTMENT",
+      qty: -takeQty,
+      cost: batchCost,
+      note: stockAdj.note || "Koreksi stok FIFO manual",
+    });
+
+    remainingQty -= takeQty;
+  }
+
+  if (movementRows.length > 0) {
+    await sb.post("stock_movements", movementRows);
+  }
+}
 
     // Update stok total di tabel products
     await sb.patch("products", stockModal.id, {
@@ -5608,6 +5653,8 @@ const toggleStockManagement = async (id) => {
           : p
       )
     );
+
+    alert("Koreksi stok berhasil disimpan. Refresh dashboard untuk melihat audit FIFO terbaru.");
 
     setStockModal(null);
     setStockAdj({ type: "tambah", qty: "", cost: "", note: "" });
@@ -5881,8 +5928,28 @@ const toggleStockManagement = async (id) => {
             </div>
             <div className="form-grid">
               <div>
-                <label>Stok Awal</label>
-                <input className="input" type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} />
+                <label>{editProduct ? "Stok" : "Stok Awal"}</label>
+<input
+  className="input"
+  type="number"
+  value={form.stock}
+  disabled={!!editProduct?.stock_management}
+  onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+/>
+
+{editProduct?.stock_management && (
+  <div
+    style={{
+      marginTop: 6,
+      fontSize: 12,
+      color: "var(--text-muted)",
+      fontWeight: 700,
+      lineHeight: 1.5,
+    }}
+  >
+    Stok produk FIFO tidak bisa diubah dari Edit Produk. Gunakan Restock, Koreksi Stok, atau Catat Opname agar batch FIFO tetap sinkron.
+  </div>
+)}
               </div>
               <div>
                 <label>Diskon (%)</label>
