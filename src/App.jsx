@@ -2864,7 +2864,8 @@ const sessionEnd = cashSession?.status === "closed" && cashSession?.updated_at
   : null;
 
 const currentSessionTxns = cashSession?.id
-  ? todayTxns.filter(t => Number(t.cashSessionId || t.cash_session_id) === Number(cashSession.id))
+  ? activeTransactions.filter(
+    t => Number(t.cashSessionId || t.cash_session_id) === Number(cashSession.id))
   : [];
 
 const currentSessionMovements = cashSession?.id
@@ -6406,6 +6407,9 @@ ${
     if (historyShiftFilter !== "Semua" && Number(txnSessionId) !== Number(historyShiftFilter)) {
     return false;
   }
+    if (historyShiftFilter !== "semua") {
+      return true;
+    }
 
     if (period === "hari") {
       return dateStr === selectedStr;
