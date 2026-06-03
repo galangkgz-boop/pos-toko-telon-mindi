@@ -5431,7 +5431,7 @@ function Products({ products, setProducts, transactions }) {
         stock_management: true,
       });
 
-      await sb.post("stock_batches", [
+      const [newBatch] = await sb.post("stock_batches", [
         {
           product_id: restockProduct.id,
           qty_in: qty,
@@ -5444,7 +5444,7 @@ function Products({ products, setProducts, transactions }) {
       await sb.post("stock_movements", [
         {
           product_id: restockProduct.id,
-          batch_id: null,
+          batch_id: newBatch.id || null,
           type: "IN",
           qty: qty,
           cost: cost,
