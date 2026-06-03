@@ -5389,6 +5389,98 @@ function Products({ products, setProducts, transactions }) {
     });
   };
 
+  const saveProduct = async () => {
+  if (savingProductRef.current) return;
+
+  const name = String(form.name || "").trim();
+  const category = String(form.category || "").trim();
+  const unit = String(form.unit || "pcs").trim();
+
+  if (!name) {
+    alert("Nama produk wajib diisi.");
+    return;
+  }
+
+  if (!category) {
+    alert("Kategori wajib diisi.");
+    return;
+  }
+
+  if (Number(form.price || 0) <= 0) {
+    alert("Harga jual harus lebih dari 0.");
+    return;
+  }
+
+  if (Number(form.cost || 0) < 0) {
+    alert("Modal tidak boleh minus.");
+    return;
+  }
+
+  savingProductRef.current = true;
+  setSavingProduct(true);
+
+  try {
+    const payload = {
+      name: name,
+      category: category,
+      price: Number(form.price || 0),
+      cost: Number(form.cost || 0),
+      unit: unit || "pcs",
+      image: form.image || "🛍️",
+      discount: Number(form.discount || 0),
+      active: form.active !== false,
+      stock_management: form.stock_management || false,
+    };
+
+    if (!editProduct || !editProduct.stock_management) {
+      payload.stock = Number(form.stock || 0);
+    }
+
+    if (editProduct) {
+      const [updatedProduct] = await sb.patch("products", editProduct.id, payload);
+
+      setProducts(prev =>
+        prev.map(p =>
+          Number(p.id) === Number(editProduct.id)
+            ? {
+                ...p,
+                ...updatedProduct,
+              }
+            : p
+        )
+      );
+    } else {
+      payload.stock = Number(form.stock || 0);
+
+      const [newProduct] = await sb.post("products", [payload]);
+
+      setProducts(prev => {
+        const exists = prev.some(p => Number(p.id) === Number(newProduct.id));
+        return exists ? prev : [...prev, newProduct];
+      });
+    }
+
+    setShowModal(false);
+    setEditProduct(null);
+    setForm({
+      name: "",
+      category: "",
+      price: "",
+      cost: "",
+      stock: "",
+      unit: "pcs",
+      image: "🛍️",
+      discount: 0,
+      active: true,
+    });
+  } catch (err) {
+    alert("Gagal menyimpan produk: " + err.message);
+  } finally {
+    savingProductRef.current = false;
+    setSavingProduct(false);
+  }
+};
+
  const saveRestock = async () => {
   if (!restockProduct || savingRestock) return;
 
