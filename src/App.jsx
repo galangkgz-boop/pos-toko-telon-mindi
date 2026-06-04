@@ -126,18 +126,30 @@ const buildThermalReceipt = (txn, settings) => {
   const receiptHeader = getReceiptHeaderLines(settings);
   const note = settings?.receiptNote || settings?.receipt_footer || "Terima kasih sudah berbelanja!";
 
-  const items = (txn.items || []).map(item => {
-    const name = String(item.name || "").toUpperCase().slice(0, 28);
-    const qty = Number(item.qty || 0);
-    const price = Number(item.price || 0);
-    const subtotal = Number(item.subtotal || qty * price);
+  const money = (n) => Number(n || 0).toLocaleString("id-ID");
 
-    return (
-      name + "\n" +
-      qty + " x " + fmt(price) + "\n" +
-      "                 " + fmt(subtotal) + "\n"
-    );
-  }).join("");
+const padReceiptLine = (left, right, width = 32) => {
+  const leftText = String(left || "");
+  const rightText = String(right || "");
+  const spaceCount = Math.max(1, width - leftText.length - rightText.length);
+
+  return leftText + " ".repeat(spaceCount) + rightText;
+};
+
+const items = (txn.items || []).map(item => {
+  const name = String(item.name || "").toUpperCase().slice(0, 32);
+  const qty = Number(item.qty || 0);
+  const price = Number(item.price || 0);
+  const subtotal = Number(item.subtotal || qty * price);
+
+  const itemLine = padReceiptLine(
+    qty + " x " + money(price) + " =",
+    money(subtotal),
+    32
+  );
+
+  return name + "\n" + itemLine + "\n";
+}).join("");
 
   const paid = Number(txn.paid || txn.cashReceived || txn.payment || 0);
 const change = Number(txn.change || 0);
@@ -156,11 +168,20 @@ const receiptDiscount = Number(txn.discountAmount || txn.discount_amount || 0);
     line,
     items,
     line,
-"Subtotal   " + fmt(receiptSubtotal) + "\n",
-receiptDiscount > 0 ? "Diskon     -" + fmt(receiptDiscount) + "\n" : "",
-"TOTAL      " + fmt(txn.total) + "\n",
-txn.payMethod === "Tunai" ? "Bayar      " + fmt(paid) + "\n" : "",
-    txn.payMethod === "Tunai" ? "Kembali    " + fmt(change) + "\n" : "",
+padReceiptLine("Subtotal", money(receiptSubtotal), 32) + "\n",
+receiptDiscount > 0
+  ? padReceiptLine("Diskon", "-" + money(receiptDiscount), 32) + "\n"
+  : "",
+padReceiptLine("TOTAL", money(txn.total), 32) + "\n",
+txn.payMethod === "Tunai"
+  ? padReceiptLine("Bayar", money(paid), 32) + "\n"
+  : "",
+txn.payMethod === "Tunai"
+  ? line
+  : "",
+txn.payMethod === "Tunai"
+  ? padReceiptLine("Kembali", money(change), 32) + "\n"
+  : "",
     line,
     "\x1B\x61\x01",
     note + "\n",
@@ -5039,17 +5060,43 @@ try {
 </div>
 
             <hr className="receipt-divider" />
-            {lastTxn.items.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-  {String(item.name || "").toUpperCase()} x{item.qty}
-  {item.discount ? ` (-${item.discount}%)` : ""}
-</span>
-                <span>{fmt(item.subtotal)}</span>
-              </div>
-            ))}
-            <hr className="receipt-divider" />
+{(lastTxn.items || []).map((item, i) => {
+  const qty = Number(item.qty || 0);
+  const price = Number(item.price || 0);
+  const subtotal = Number(item.subtotal || qty * price);
 
+  return (
+    <div key={i} style={{ marginBottom: 6 }}>
+      <div style={{ fontWeight: 800 }}>
+        {String(item.name || "").toUpperCase()}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 8,
+          fontSize: 11,
+        }}
+      >
+        <span>
+          {qty} x {price.toLocaleString("id-ID")}
+        </span>
+        <span>
+          {subtotal.toLocaleString("id-ID")}
+        </span>
+      </div>
+
+      {item.discount ? (
+        <div style={{ fontSize: 10, color: "var(--danger)" }}>
+          Diskon item: -{item.discount}%
+        </div>
+      ) : null}
+    </div>
+  );
+})}
+
+<hr className="receipt-divider" />
 <div style={{ display: "flex", justifyContent: "space-between" }}>
   <span>Subtotal</span>
   <span>{fmt(Number(lastTxn.subtotal || lastTxn.total || 0))}</span>
@@ -5066,19 +5113,33 @@ try {
   <span>TOTAL</span>
   <span>{fmt(lastTxn.total)}</span>
 </div>
-            {lastTxn.payMethod === "Tunai" && (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-  <span>Bayar</span>
-  <span>{fmt(Number(lastTxn.paid || lastTxn.cashReceived || lastTxn.payment || 0))}</span>
-</div>
+{lastTxn.payMethod === "Tunai" && (
+  <>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span>Bayar</span>
+      <strong>{fmt(lastTxn.paid)}</strong>
+    </div>
 
-<div style={{ display: "flex", justifyContent: "space-between" }}>
-  <span>Kembalian</span>
-  <span>{fmt(Number(lastTxn.change || 0))}</span>
-</div>
-              </>
-            )}
+    <div
+      style={{
+        borderTop: "1px dashed #999",
+        margin: "8px 0",
+      }}
+    />
+
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        fontWeight: 900,
+      }}
+    >
+      <span>Kembalian</span>
+      <strong>{fmt(lastTxn.change)}</strong>
+    </div>
+  </>
+)}
+
             <hr className="receipt-divider" />
             <div style={{ textAlign: "center", fontSize: 11 }}>{settings?.receipt_footer || "Terima kasih sudah berbelanja"} kasih sudah berbelanja! 🌿</div>
           </div>
