@@ -136,14 +136,31 @@ const padReceiptLine = (left, right, width = 32) => {
   return leftText + " ".repeat(spaceCount) + rightText;
 };
 
+const padThreeColumns = (left, middle, right, width = 32) => {
+  const leftText = String(left || "");
+  const middleText = String(middle || "");
+  const rightText = String(right || "");
+
+  const leftWidth = 10;
+  const middleWidth = 8;
+  const rightWidth = width - leftWidth - middleWidth;
+
+  return (
+    leftText.padEnd(leftWidth, " ").slice(0, leftWidth) +
+    middleText.padEnd(middleWidth, " ").slice(0, middleWidth) +
+    rightText.padStart(rightWidth, " ").slice(-rightWidth)
+  );
+};
+
 const items = (txn.items || []).map(item => {
   const name = String(item.name || "").toUpperCase().slice(0, 32);
   const qty = Number(item.qty || 0);
   const price = Number(item.price || 0);
   const subtotal = Number(item.subtotal || qty * price);
 
-  const itemLine = padReceiptLine(
-    qty + " x " + money(price) + " =",
+  const itemLine = padThreeColumns(
+    money(price),
+    "x " + qty,
     money(subtotal),
     32
   );
@@ -5073,16 +5090,16 @@ try {
 
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 8,
+          display: "grid",
+          gridTemplateColumns: "1fr 48px 1fr",
+          gap: 6,
           fontSize: 11,
+          alignItems: "center",
         }}
       >
-        <span>
-          {qty} x {price.toLocaleString("id-ID")}
-        </span>
-        <span>
+        <span>{price.toLocaleString("id-ID")}</span>
+        <span style={{ textAlign: "center" }}>x {qty}</span>
+        <span style={{ textAlign: "right"}}>
           {subtotal.toLocaleString("id-ID")}
         </span>
       </div>
@@ -7056,16 +7073,15 @@ const itemsSold = activeFiltered.reduce(
             <table style={{ marginBottom: 14 }}>
               <thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
               <tbody>
-                {detail.items.map((item, i) => (
-                  <tr key={i}>
-                    <td>
-  {String(item.name || "").toUpperCase()}
-  {item.discount > 0 && (
+
+{detail.items.map((item, i) => (
+  <tr key={i}>
+    <td>{String(item.name || "").toUpperCase()} {item.discount > 0 && (
     <span className="badge badge-orange" style={{ marginLeft: 6, fontSize: 10 }}>
       -{item.discount}%
     </span>
   )}
-</td>
+    </td>
                     <td>{item.qty}</td>
                     <td>{fmt(item.price)}</td>
                     <td style={{ fontWeight: 700 }}>{fmt(item.subtotal)}</td>
