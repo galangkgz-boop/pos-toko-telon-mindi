@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as qz from "qz-tray";
 import { sb } from "./lib/supabase";
+import { fmt, fmtDate, fmtTime } from "./lib/helpers";
 
 // Seed produk awal jika tabel kosong
 const SEED_PRODUCTS = [
@@ -44,9 +45,6 @@ const Icon = ({ name, size = 20 }) => {
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
-const fmt = (n) => "Rp " + n.toLocaleString("id-ID");
-const fmtDate = (iso) => new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-const fmtTime = (iso) => new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
 const RECEIPT_STORE_LINES = [
   "AGEN SOSIS DAN ES KRISTAL",
