@@ -33,6 +33,20 @@ export const sb = {
     return r.json();
   },
 
+  async upsert(table, body, params = "") {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/" + table + params, { 
+        method: "POST", 
+        headers: {
+          ...HEADERS,
+          prefer: "resolution=merge-duplicates,return=representation" 
+        },
+        body: JSON.stringify(body) 
+    });
+
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+
   async patch(table, id, body) {
     const r = await fetch(SUPABASE_URL + "/rest/v1/" + table + "?id=eq." + id, { 
         method: "PATCH", 

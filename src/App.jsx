@@ -7360,20 +7360,7 @@ function Settings({ appSettings, setAppSettings }) {
   ];
 
   try {
-    const url = SUPABASE_URL + "/rest/v1/settings?on_conflict=key";
-
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        ...HEADERS,
-        Prefer: "resolution=merge-duplicates,return=representation",
-      },
-      body: JSON.stringify(rows),
-    });
-
-    if (!r.ok) {
-      throw new Error(await r.text());
-    }
+    await sb.upsert("settings", rows, "?on_conflict=key");
 
     setAppSettings(prev => ({
       ...prev,
@@ -7605,22 +7592,11 @@ const voidTransaction = async (txn, reason) => {
     }
 
     // 5. Tandai transaksi sebagai void.
-    const r = await fetch(SUPABASE_URL + "/rest/v1/transactions?id=eq." + txn.id, {
-      method: "PATCH",
-      headers: {
-        ...HEADERS,
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify({
-        status: "void",
-        voided_at: new Date().toISOString(),
-        void_reason: reason || "Dibatalkan",
-      }),
+    await sb.patch("transactions", txn.id, {
+      status: "void",
+      voided_at: new Date().toISOString(),
+      void_reason: reason || "Dibatalkan",
     });
-
-    if (!r.ok) {
-      throw new Error(await r.text());
-    }
 
     setTransactions(prev =>
       prev.map(t =>
